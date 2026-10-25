@@ -199,7 +199,7 @@ PulseCRM/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/PulseCRM.git
+git clone https://github.com/iftikhardba-svg/PulseCRM.git
 ```
 
 ### 2. Build the database
