@@ -1,0 +1,23 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.swp
+
+# MySQL Workbench backups and local connection files
+*.mwb.bak
+*.mwb.beforefix
+*.cnf
+*.my.cnf
+
+# Local database dumps and logs (keep only the build script in database/)
+backups/
+*.dump
+*.log
+
+# Office lock files
+~$*

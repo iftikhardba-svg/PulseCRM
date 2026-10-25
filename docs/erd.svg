@@ -1,0 +1,762 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1840" height="1628" viewBox="0 0 1840 1628" font-family="Helvetica, Arial, sans-serif">
+<rect width="1840" height="1628" fill="#ffffff"/>
+<text x="40" y="48" font-size="26" font-weight="bold" fill="#1d2939">PulseCRM - Entity Relationship Diagram</text>
+<text x="40" y="72" font-size="13" fill="#475467">MySQL 8.0 | 18 tables | crow's foot notation | PK = primary key, FK = foreign key, UK = unique</text>
+<line x1="225.0" y1="178.0" x2="225.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="218.0" y1="186.0" x2="232.0" y2="186.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="218.0" y1="192.0" x2="232.0" y2="192.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="225.0" y1="306.0" x2="217.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="225.0" y1="306.0" x2="225.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="225.0" y1="306.0" x2="233.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="225.0" cy="296.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="219.0" y="249.0" font-size="11" fill="#475467" text-anchor="end" font-style="italic">has</text>
+<line x1="585.0" y1="160.0" x2="585.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="578.0" y1="168.0" x2="592.0" y2="168.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="585.0" cy="180.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<line x1="585.0" y1="306.0" x2="577.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="585.0" y1="306.0" x2="585.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="585.0" y1="306.0" x2="593.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="585.0" cy="296.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="579.0" y="240.0" font-size="11" fill="#475467" text-anchor="end" font-style="italic">classifies</text>
+<line x1="945.0" y1="160.0" x2="945.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="938.0" y1="168.0" x2="952.0" y2="168.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="938.0" y1="174.0" x2="952.0" y2="174.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="945.0" y1="306.0" x2="937.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="945.0" y1="306.0" x2="945.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="945.0" y1="306.0" x2="953.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="945.0" cy="296.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="939.0" y="240.0" font-size="11" fill="#475467" text-anchor="end" font-style="italic">generates</text>
+<line x1="1305.0" y1="250.0" x2="1305.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1298.0" y1="258.0" x2="1312.0" y2="258.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1298.0" y1="264.0" x2="1312.0" y2="264.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1305.0" y1="306.0" x2="1297.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1305.0" y1="306.0" x2="1305.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1305.0" y1="306.0" x2="1313.0" y2="320.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="1305.0" cy="296.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="1299.0" y="285.0" font-size="11" fill="#475467" text-anchor="end" font-style="italic">targets</text>
+<line x1="1080.0" y1="380.0" x2="1170.0" y2="380.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1088.0" y1="387.0" x2="1088.0" y2="373.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1094.0" y1="387.0" x2="1094.0" y2="373.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1156.0" y1="380.0" x2="1170.0" y2="388.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1156.0" y1="380.0" x2="1170.0" y2="380.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1156.0" y1="380.0" x2="1170.0" y2="372.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="1146.0" cy="380.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="1125.0" y="375.0" font-size="11" fill="#475467" text-anchor="middle" font-style="italic">joins</text>
+<line x1="720.0" y1="430.0" x2="810.0" y2="430.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="728.0" y1="437.0" x2="728.0" y2="423.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="740.0" cy="430.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<line x1="796.0" y1="430.0" x2="810.0" y2="438.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="796.0" y1="430.0" x2="810.0" y2="430.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="796.0" y1="430.0" x2="810.0" y2="422.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="786.0" cy="430.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="765.0" y="425.0" font-size="11" fill="#475467" text-anchor="middle" font-style="italic">converted from</text>
+<line x1="585.0" y1="570.0" x2="585.0" y2="694.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="578.0" y1="578.0" x2="592.0" y2="578.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="578.0" y1="584.0" x2="592.0" y2="584.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="585.0" y1="680.0" x2="577.0" y2="694.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="585.0" y1="680.0" x2="585.0" y2="694.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="585.0" y1="680.0" x2="593.0" y2="694.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="585.0" cy="670.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="579.0" y="632.0" font-size="11" fill="#475467" text-anchor="end" font-style="italic">employs</text>
+<line x1="720.0" y1="530.0" x2="753.0" y2="530.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="753.0" y1="530.0" x2="753.0" y2="734.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="753.0" y1="734.0" x2="810.0" y2="734.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="728.0" y1="537.0" x2="728.0" y2="523.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="734.0" y1="537.0" x2="734.0" y2="523.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="796.0" y1="734.0" x2="810.0" y2="742.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="796.0" y1="734.0" x2="810.0" y2="734.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="796.0" y1="734.0" x2="810.0" y2="726.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="786.0" cy="734.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="747.0" y="632.0" font-size="11" fill="#475467" text-anchor="end" font-style="italic">has</text>
+<line x1="720.0" y1="779.0" x2="810.0" y2="779.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="728.0" y1="786.0" x2="728.0" y2="772.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="740.0" cy="779.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<line x1="796.0" y1="779.0" x2="810.0" y2="787.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="796.0" y1="779.0" x2="810.0" y2="779.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="796.0" y1="779.0" x2="810.0" y2="771.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="786.0" cy="779.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="765.0" y="774.0" font-size="11" fill="#475467" text-anchor="middle" font-style="italic">decides</text>
+<line x1="945.0" y1="624.0" x2="945.0" y2="694.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="938.0" y1="632.0" x2="952.0" y2="632.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="945.0" cy="644.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<line x1="945.0" y1="680.0" x2="937.0" y2="694.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="945.0" y1="680.0" x2="945.0" y2="694.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="945.0" y1="680.0" x2="953.0" y2="694.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="945.0" cy="670.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="939.0" y="659.0" font-size="11" fill="#475467" text-anchor="end" font-style="italic">becomes</text>
+<line x1="1170.0" y1="744.0" x2="1080.0" y2="744.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1162.0" y1="737.0" x2="1162.0" y2="751.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1156.0" y1="737.0" x2="1156.0" y2="751.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1094.0" y1="744.0" x2="1080.0" y2="736.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1094.0" y1="744.0" x2="1080.0" y2="744.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1094.0" y1="744.0" x2="1080.0" y2="752.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="1104.0" cy="744.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="1125.0" y="739.0" font-size="11" fill="#475467" text-anchor="middle" font-style="italic">stage of</text>
+<line x1="1080.0" y1="914.0" x2="1110.0" y2="914.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1110.0" y1="914.0" x2="1110.0" y2="1059.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1110.0" y1="1059.0" x2="1170.0" y2="1059.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1088.0" y1="921.0" x2="1088.0" y2="907.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1094.0" y1="921.0" x2="1094.0" y2="907.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1156.0" y1="1059.0" x2="1170.0" y2="1067.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1156.0" y1="1059.0" x2="1170.0" y2="1059.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1156.0" y1="1059.0" x2="1170.0" y2="1051.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="1146.0" cy="1059.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="1104.0" y="986.5" font-size="11" fill="#475467" text-anchor="end" font-style="italic">contains</text>
+<line x1="1530.0" y1="1059.0" x2="1440.0" y2="1059.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1522.0" y1="1052.0" x2="1522.0" y2="1066.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1516.0" y1="1052.0" x2="1516.0" y2="1066.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1454.0" y1="1059.0" x2="1440.0" y2="1051.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1454.0" y1="1059.0" x2="1440.0" y2="1059.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1454.0" y1="1059.0" x2="1440.0" y2="1067.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="1464.0" cy="1059.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="1485.0" y="1054.0" font-size="11" fill="#475467" text-anchor="middle" font-style="italic">sold in</text>
+<line x1="585.0" y1="890.0" x2="585.0" y2="1014.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="578.0" y1="898.0" x2="592.0" y2="898.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="585.0" cy="910.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<line x1="585.0" y1="1000.0" x2="577.0" y2="1014.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="585.0" y1="1000.0" x2="585.0" y2="1014.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="585.0" y1="1000.0" x2="593.0" y2="1014.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="585.0" cy="990.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="579.0" y="952.0" font-size="11" fill="#475467" text-anchor="end" font-style="italic">involves</text>
+<line x1="810.0" y1="914.0" x2="743.0" y2="914.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="743.0" y1="914.0" x2="743.0" y2="1084.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="743.0" y1="1084.0" x2="720.0" y2="1084.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="802.0" y1="907.0" x2="802.0" y2="921.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="790.0" cy="914.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<line x1="734.0" y1="1084.0" x2="720.0" y2="1076.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="734.0" y1="1084.0" x2="720.0" y2="1084.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="734.0" y1="1084.0" x2="720.0" y2="1092.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="744.0" cy="1084.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="737.0" y="999.0" font-size="11" fill="#475467" text-anchor="end" font-style="italic">progresses</text>
+<line x1="810.0" y1="584.0" x2="779.0" y2="584.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="779.0" y1="584.0" x2="779.0" y2="1144.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="779.0" y1="1144.0" x2="720.0" y2="1144.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="802.0" y1="577.0" x2="802.0" y2="591.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="790.0" cy="584.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<line x1="734.0" y1="1144.0" x2="720.0" y2="1136.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="734.0" y1="1144.0" x2="720.0" y2="1144.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="734.0" y1="1144.0" x2="720.0" y2="1152.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="744.0" cy="1144.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="773.0" y="864.0" font-size="11" fill="#475467" text-anchor="end" font-style="italic">follows up</text>
+<line x1="450.0" y1="540.0" x2="405.0" y2="540.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="405.0" y1="540.0" x2="405.0" y2="734.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="405.0" y1="734.0" x2="360.0" y2="734.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="442.0" y1="533.0" x2="442.0" y2="547.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="436.0" y1="533.0" x2="436.0" y2="547.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="374.0" y1="734.0" x2="360.0" y2="726.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="374.0" y1="734.0" x2="360.0" y2="734.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="374.0" y1="734.0" x2="360.0" y2="742.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="384.0" cy="734.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="399.0" y="637.0" font-size="11" fill="#475467" text-anchor="end" font-style="italic">raises</text>
+<line x1="450.0" y1="804.0" x2="360.0" y2="804.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="442.0" y1="797.0" x2="442.0" y2="811.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="430.0" cy="804.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<line x1="374.0" y1="804.0" x2="360.0" y2="796.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="374.0" y1="804.0" x2="360.0" y2="804.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="374.0" y1="804.0" x2="360.0" y2="812.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="384.0" cy="804.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="405.0" y="799.0" font-size="11" fill="#475467" text-anchor="middle" font-style="italic">reports</text>
+<line x1="945.0" y1="944.0" x2="945.0" y2="1014.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="938.0" y1="952.0" x2="952.0" y2="952.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="938.0" y1="958.0" x2="952.0" y2="958.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="945.0" y1="1000.0" x2="937.0" y2="1014.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="945.0" y1="1000.0" x2="945.0" y2="1014.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="945.0" y1="1000.0" x2="953.0" y2="1014.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="945.0" cy="990.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="939.0" y="979.0" font-size="11" fill="#475467" text-anchor="end" font-style="italic">billed by</text>
+<line x1="945.0" y1="1174.0" x2="945.0" y2="1316.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="938.0" y1="1182.0" x2="952.0" y2="1182.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="938.0" y1="1188.0" x2="952.0" y2="1188.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="945.0" y1="1302.0" x2="937.0" y2="1316.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="945.0" y1="1302.0" x2="945.0" y2="1316.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="945.0" y1="1302.0" x2="953.0" y2="1316.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="945.0" cy="1292.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="939.0" y="1245.0" font-size="11" fill="#475467" text-anchor="end" font-style="italic">paid by</text>
+<line x1="1080.0" y1="866.0" x2="1605.0" y2="866.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1605.0" y1="866.0" x2="1605.0" y2="836.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1088.0" y1="873.0" x2="1088.0" y2="859.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1094.0" y1="873.0" x2="1094.0" y2="859.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1605.0" y1="850.0" x2="1613.0" y2="836.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1605.0" y1="850.0" x2="1605.0" y2="836.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1605.0" y1="850.0" x2="1597.0" y2="836.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="1605.0" cy="860.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="1342.5" y="861.0" font-size="11" fill="#475467" text-anchor="middle" font-style="italic">tracked in</text>
+<line x1="1440.0" y1="734.0" x2="1530.0" y2="734.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1448.0" y1="741.0" x2="1448.0" y2="727.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="1460.0" cy="734.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<line x1="1516.0" y1="734.0" x2="1530.0" y2="742.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1516.0" y1="734.0" x2="1530.0" y2="734.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1516.0" y1="734.0" x2="1530.0" y2="726.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="1506.0" cy="734.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="1485.0" y="729.0" font-size="11" fill="#475467" text-anchor="middle" font-style="italic">from</text>
+<line x1="1440.0" y1="784.0" x2="1530.0" y2="784.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1448.0" y1="791.0" x2="1448.0" y2="777.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1454.0" y1="791.0" x2="1454.0" y2="777.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1516.0" y1="784.0" x2="1530.0" y2="792.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1516.0" y1="784.0" x2="1530.0" y2="784.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1516.0" y1="784.0" x2="1530.0" y2="776.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="1506.0" cy="784.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="1485.0" y="779.0" font-size="11" fill="#475467" text-anchor="middle" font-style="italic">to</text>
+<path d="M 90 380 h -24 v 60 h 24" fill="none" stroke="#344054" stroke-width="1.4"/>
+<line x1="82.0" y1="373.0" x2="82.0" y2="387.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="70.0" cy="380.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<line x1="76.0" y1="440.0" x2="90.0" y2="448.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="76.0" y1="440.0" x2="90.0" y2="440.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="76.0" y1="440.0" x2="90.0" y2="432.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="66.0" cy="440.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="60" y="415" font-size="11" fill="#475467" text-anchor="end" font-style="italic">manages</text>
+<rect x="93" y="93" width="270" height="88" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="90" y="90" width="270" height="88" rx="6" fill="#ffffff" stroke="#5b6472" stroke-width="1.6"/>
+<path d="M 90 118 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#5b6472"/>
+<text x="100" y="109" font-size="14" font-weight="bold" fill="#ffffff">roles</text>
+<text x="100" y="131" font-size="12" fill="#101828" font-weight="bold">role_id</text>
+<text x="250" y="131" font-size="11" fill="#667085">int</text>
+<rect x="328" y="121" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="339" y="131" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="91" y="136" width="268" height="18" fill="#f5f7fa"/>
+<text x="100" y="149" font-size="12" fill="#101828">role_name</text>
+<text x="250" y="149" font-size="11" fill="#667085">varchar(50)</text>
+<rect x="328" y="139" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="339" y="149" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<text x="100" y="167" font-size="12" fill="#101828">description</text>
+<text x="250" y="167" font-size="11" fill="#667085">varchar(255)</text>
+<rect x="453" y="93" width="270" height="70" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="450" y="90" width="270" height="70" rx="6" fill="#ffffff" stroke="#1f6fb2" stroke-width="1.6"/>
+<path d="M 450 118 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#1f6fb2"/>
+<text x="460" y="109" font-size="14" font-weight="bold" fill="#ffffff">industries</text>
+<text x="460" y="131" font-size="12" fill="#101828" font-weight="bold">industry_id</text>
+<text x="610" y="131" font-size="11" fill="#667085">int</text>
+<rect x="688" y="121" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="699" y="131" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="451" y="136" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="149" font-size="12" fill="#101828">industry_name</text>
+<text x="610" y="149" font-size="11" fill="#667085">varchar(60)</text>
+<rect x="688" y="139" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="699" y="149" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<rect x="813" y="93" width="270" height="70" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="810" y="90" width="270" height="70" rx="6" fill="#ffffff" stroke="#7b3fb8" stroke-width="1.6"/>
+<path d="M 810 118 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#7b3fb8"/>
+<text x="820" y="109" font-size="14" font-weight="bold" fill="#ffffff">lead_sources</text>
+<text x="820" y="131" font-size="12" fill="#101828" font-weight="bold">source_id</text>
+<text x="970" y="131" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="121" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="1059" y="131" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="811" y="136" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="149" font-size="12" fill="#101828">source_name</text>
+<text x="970" y="149" font-size="11" fill="#667085">varchar(50)</text>
+<rect x="1048" y="139" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="1059" y="149" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<rect x="1173" y="93" width="270" height="160" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="1170" y="90" width="270" height="160" rx="6" fill="#ffffff" stroke="#7b3fb8" stroke-width="1.6"/>
+<path d="M 1170 118 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#7b3fb8"/>
+<text x="1180" y="109" font-size="14" font-weight="bold" fill="#ffffff">campaigns</text>
+<text x="1180" y="131" font-size="12" fill="#101828" font-weight="bold">campaign_id</text>
+<text x="1330" y="131" font-size="11" fill="#667085">int</text>
+<rect x="1408" y="121" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="1419" y="131" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="1171" y="136" width="268" height="18" fill="#f5f7fa"/>
+<text x="1180" y="149" font-size="12" fill="#101828">campaign_name</text>
+<text x="1330" y="149" font-size="11" fill="#667085">varchar(120)</text>
+<rect x="1408" y="139" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="1419" y="149" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<text x="1180" y="167" font-size="12" fill="#101828">channel</text>
+<text x="1330" y="167" font-size="11" fill="#667085">varchar(20)</text>
+<rect x="1171" y="172" width="268" height="18" fill="#f5f7fa"/>
+<text x="1180" y="185" font-size="12" fill="#101828">start_date</text>
+<text x="1330" y="185" font-size="11" fill="#667085">date</text>
+<text x="1180" y="203" font-size="12" fill="#101828">end_date</text>
+<text x="1330" y="203" font-size="11" fill="#667085">date</text>
+<rect x="1171" y="208" width="268" height="18" fill="#f5f7fa"/>
+<text x="1180" y="221" font-size="12" fill="#101828">budget</text>
+<text x="1330" y="221" font-size="11" fill="#667085">decimal(12,2)</text>
+<text x="1180" y="239" font-size="12" fill="#101828">owner_user_id</text>
+<text x="1330" y="239" font-size="11" fill="#667085">int</text>
+<rect x="1408" y="229" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1419" y="239" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="93" y="323" width="270" height="196" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="90" y="320" width="270" height="196" rx="6" fill="#ffffff" stroke="#5b6472" stroke-width="1.6"/>
+<path d="M 90 348 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#5b6472"/>
+<text x="100" y="339" font-size="14" font-weight="bold" fill="#ffffff">users</text>
+<text x="100" y="361" font-size="12" fill="#101828" font-weight="bold">user_id</text>
+<text x="250" y="361" font-size="11" fill="#667085">int</text>
+<rect x="328" y="351" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="339" y="361" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="91" y="366" width="268" height="18" fill="#f5f7fa"/>
+<text x="100" y="379" font-size="12" fill="#101828">full_name</text>
+<text x="250" y="379" font-size="11" fill="#667085">varchar(100)</text>
+<text x="100" y="397" font-size="12" fill="#101828">email</text>
+<text x="250" y="397" font-size="11" fill="#667085">varchar(120)</text>
+<rect x="328" y="387" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="339" y="397" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<rect x="91" y="402" width="268" height="18" fill="#f5f7fa"/>
+<text x="100" y="415" font-size="12" fill="#101828">phone</text>
+<text x="250" y="415" font-size="11" fill="#667085">varchar(20)</text>
+<text x="100" y="433" font-size="12" fill="#101828">role_id</text>
+<text x="250" y="433" font-size="11" fill="#667085">int</text>
+<rect x="328" y="423" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="339" y="433" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="91" y="438" width="268" height="18" fill="#f5f7fa"/>
+<text x="100" y="451" font-size="12" fill="#101828">manager_id</text>
+<text x="250" y="451" font-size="11" fill="#667085">int</text>
+<rect x="328" y="441" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="339" y="451" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<text x="100" y="469" font-size="12" fill="#101828">hire_date</text>
+<text x="250" y="469" font-size="11" fill="#667085">date</text>
+<rect x="91" y="474" width="268" height="18" fill="#f5f7fa"/>
+<text x="100" y="487" font-size="12" fill="#101828">is_active</text>
+<text x="250" y="487" font-size="11" fill="#667085">tinyint(1)</text>
+<text x="100" y="505" font-size="12" fill="#101828">created_at</text>
+<text x="250" y="505" font-size="11" fill="#667085">datetime</text>
+<rect x="453" y="323" width="270" height="250" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="450" y="320" width="270" height="250" rx="6" fill="#ffffff" stroke="#1f6fb2" stroke-width="1.6"/>
+<path d="M 450 348 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#1f6fb2"/>
+<text x="460" y="339" font-size="14" font-weight="bold" fill="#ffffff">accounts</text>
+<text x="460" y="361" font-size="12" fill="#101828" font-weight="bold">account_id</text>
+<text x="610" y="361" font-size="11" fill="#667085">int</text>
+<rect x="688" y="351" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="699" y="361" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="451" y="366" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="379" font-size="12" fill="#101828">account_name</text>
+<text x="610" y="379" font-size="11" fill="#667085">varchar(150)</text>
+<rect x="688" y="369" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="699" y="379" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<text x="460" y="397" font-size="12" fill="#101828">industry_id</text>
+<text x="610" y="397" font-size="11" fill="#667085">int</text>
+<rect x="688" y="387" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="699" y="397" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="451" y="402" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="415" font-size="12" fill="#101828">account_type</text>
+<text x="610" y="415" font-size="11" fill="#667085">varchar(20)</text>
+<text x="460" y="433" font-size="12" fill="#101828">website</text>
+<text x="610" y="433" font-size="11" fill="#667085">varchar(150)</text>
+<rect x="451" y="438" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="451" font-size="12" fill="#101828">phone</text>
+<text x="610" y="451" font-size="11" fill="#667085">varchar(20)</text>
+<text x="460" y="469" font-size="12" fill="#101828">city</text>
+<text x="610" y="469" font-size="11" fill="#667085">varchar(60)</text>
+<rect x="451" y="474" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="487" font-size="12" fill="#101828">country</text>
+<text x="610" y="487" font-size="11" fill="#667085">varchar(60)</text>
+<text x="460" y="505" font-size="12" fill="#101828">annual_revenue</text>
+<text x="610" y="505" font-size="11" fill="#667085">decimal(15,2)</text>
+<rect x="451" y="510" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="523" font-size="12" fill="#101828">employee_count</text>
+<text x="610" y="523" font-size="11" fill="#667085">int</text>
+<text x="460" y="541" font-size="12" fill="#101828">owner_user_id</text>
+<text x="610" y="541" font-size="11" fill="#667085">int</text>
+<rect x="688" y="531" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="699" y="541" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="451" y="546" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="559" font-size="12" fill="#101828">created_at</text>
+<text x="610" y="559" font-size="11" fill="#667085">datetime</text>
+<rect x="813" y="323" width="270" height="304" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="810" y="320" width="270" height="304" rx="6" fill="#ffffff" stroke="#7b3fb8" stroke-width="1.6"/>
+<path d="M 810 348 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#7b3fb8"/>
+<text x="820" y="339" font-size="14" font-weight="bold" fill="#ffffff">leads</text>
+<text x="820" y="361" font-size="12" fill="#101828" font-weight="bold">lead_id</text>
+<text x="970" y="361" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="351" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="1059" y="361" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="811" y="366" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="379" font-size="12" fill="#101828">first_name</text>
+<text x="970" y="379" font-size="11" fill="#667085">varchar(50)</text>
+<text x="820" y="397" font-size="12" fill="#101828">last_name</text>
+<text x="970" y="397" font-size="11" fill="#667085">varchar(50)</text>
+<rect x="811" y="402" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="415" font-size="12" fill="#101828">company_name</text>
+<text x="970" y="415" font-size="11" fill="#667085">varchar(150)</text>
+<text x="820" y="433" font-size="12" fill="#101828">job_title</text>
+<text x="970" y="433" font-size="11" fill="#667085">varchar(100)</text>
+<rect x="811" y="438" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="451" font-size="12" fill="#101828">email</text>
+<text x="970" y="451" font-size="11" fill="#667085">varchar(120)</text>
+<rect x="1048" y="441" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="1059" y="451" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<text x="820" y="469" font-size="12" fill="#101828">phone</text>
+<text x="970" y="469" font-size="11" fill="#667085">varchar(20)</text>
+<rect x="811" y="474" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="487" font-size="12" fill="#101828">city</text>
+<text x="970" y="487" font-size="11" fill="#667085">varchar(60)</text>
+<text x="820" y="505" font-size="12" fill="#101828">source_id</text>
+<text x="970" y="505" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="495" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1059" y="505" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="811" y="510" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="523" font-size="12" fill="#101828">status</text>
+<text x="970" y="523" font-size="11" fill="#667085">varchar(20)</text>
+<text x="820" y="541" font-size="12" fill="#101828">lead_score</text>
+<text x="970" y="541" font-size="11" fill="#667085">tinyint u</text>
+<rect x="811" y="546" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="559" font-size="12" fill="#101828">owner_user_id</text>
+<text x="970" y="559" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="549" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1059" y="559" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<text x="820" y="577" font-size="12" fill="#101828">converted_account_id</text>
+<text x="970" y="577" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="567" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1059" y="577" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="811" y="582" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="595" font-size="12" fill="#101828">converted_at</text>
+<text x="970" y="595" font-size="11" fill="#667085">datetime</text>
+<text x="820" y="613" font-size="12" fill="#101828">created_at</text>
+<text x="970" y="613" font-size="11" fill="#667085">datetime</text>
+<rect x="1173" y="323" width="270" height="106" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="1170" y="320" width="270" height="106" rx="6" fill="#ffffff" stroke="#7b3fb8" stroke-width="1.6"/>
+<path d="M 1170 348 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#7b3fb8"/>
+<text x="1180" y="339" font-size="14" font-weight="bold" fill="#ffffff">campaign_leads</text>
+<text x="1180" y="361" font-size="12" fill="#101828" font-weight="bold">campaign_id</text>
+<text x="1330" y="361" font-size="11" fill="#667085">int</text>
+<rect x="1408" y="351" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1419" y="361" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="1382" y="351" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="1393" y="361" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="1171" y="366" width="268" height="18" fill="#f5f7fa"/>
+<text x="1180" y="379" font-size="12" fill="#101828" font-weight="bold">lead_id</text>
+<text x="1330" y="379" font-size="11" fill="#667085">int</text>
+<rect x="1408" y="369" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1419" y="379" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="1382" y="369" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="1393" y="379" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<text x="1180" y="397" font-size="12" fill="#101828">added_on</text>
+<text x="1330" y="397" font-size="11" fill="#667085">date</text>
+<rect x="1171" y="402" width="268" height="18" fill="#f5f7fa"/>
+<text x="1180" y="415" font-size="12" fill="#101828">response</text>
+<text x="1330" y="415" font-size="11" fill="#667085">varchar(20)</text>
+<rect x="93" y="697" width="270" height="214" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="90" y="694" width="270" height="214" rx="6" fill="#ffffff" stroke="#c0622a" stroke-width="1.6"/>
+<path d="M 90 722 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#c0622a"/>
+<text x="100" y="713" font-size="14" font-weight="bold" fill="#ffffff">tickets</text>
+<text x="100" y="735" font-size="12" fill="#101828" font-weight="bold">ticket_id</text>
+<text x="250" y="735" font-size="11" fill="#667085">int</text>
+<rect x="328" y="725" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="339" y="735" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="91" y="740" width="268" height="18" fill="#f5f7fa"/>
+<text x="100" y="753" font-size="12" fill="#101828">account_id</text>
+<text x="250" y="753" font-size="11" fill="#667085">int</text>
+<rect x="328" y="743" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="339" y="753" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<text x="100" y="771" font-size="12" fill="#101828">contact_id</text>
+<text x="250" y="771" font-size="11" fill="#667085">int</text>
+<rect x="328" y="761" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="339" y="771" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="91" y="776" width="268" height="18" fill="#f5f7fa"/>
+<text x="100" y="789" font-size="12" fill="#101828">assigned_user_id</text>
+<text x="250" y="789" font-size="11" fill="#667085">int</text>
+<rect x="328" y="779" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="339" y="789" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<text x="100" y="807" font-size="12" fill="#101828">subject</text>
+<text x="250" y="807" font-size="11" fill="#667085">varchar(150)</text>
+<rect x="91" y="812" width="268" height="18" fill="#f5f7fa"/>
+<text x="100" y="825" font-size="12" fill="#101828">priority</text>
+<text x="250" y="825" font-size="11" fill="#667085">varchar(10)</text>
+<text x="100" y="843" font-size="12" fill="#101828">status</text>
+<text x="250" y="843" font-size="11" fill="#667085">varchar(20)</text>
+<rect x="91" y="848" width="268" height="18" fill="#f5f7fa"/>
+<text x="100" y="861" font-size="12" fill="#101828">opened_at</text>
+<text x="250" y="861" font-size="11" fill="#667085">datetime</text>
+<text x="100" y="879" font-size="12" fill="#101828">resolved_at</text>
+<text x="250" y="879" font-size="11" fill="#667085">datetime</text>
+<rect x="91" y="884" width="268" height="18" fill="#f5f7fa"/>
+<text x="100" y="897" font-size="12" fill="#101828">satisfaction_score</text>
+<text x="250" y="897" font-size="11" fill="#667085">tinyint</text>
+<rect x="453" y="697" width="270" height="196" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="450" y="694" width="270" height="196" rx="6" fill="#ffffff" stroke="#1f6fb2" stroke-width="1.6"/>
+<path d="M 450 722 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#1f6fb2"/>
+<text x="460" y="713" font-size="14" font-weight="bold" fill="#ffffff">contacts</text>
+<text x="460" y="735" font-size="12" fill="#101828" font-weight="bold">contact_id</text>
+<text x="610" y="735" font-size="11" fill="#667085">int</text>
+<rect x="688" y="725" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="699" y="735" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="451" y="740" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="753" font-size="12" fill="#101828">account_id</text>
+<text x="610" y="753" font-size="11" fill="#667085">int</text>
+<rect x="688" y="743" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="699" y="753" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<text x="460" y="771" font-size="12" fill="#101828">first_name</text>
+<text x="610" y="771" font-size="11" fill="#667085">varchar(50)</text>
+<rect x="451" y="776" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="789" font-size="12" fill="#101828">last_name</text>
+<text x="610" y="789" font-size="11" fill="#667085">varchar(50)</text>
+<text x="460" y="807" font-size="12" fill="#101828">job_title</text>
+<text x="610" y="807" font-size="11" fill="#667085">varchar(100)</text>
+<rect x="451" y="812" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="825" font-size="12" fill="#101828">email</text>
+<text x="610" y="825" font-size="11" fill="#667085">varchar(120)</text>
+<rect x="688" y="815" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="699" y="825" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<text x="460" y="843" font-size="12" fill="#101828">phone</text>
+<text x="610" y="843" font-size="11" fill="#667085">varchar(20)</text>
+<rect x="451" y="848" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="861" font-size="12" fill="#101828">is_primary</text>
+<text x="610" y="861" font-size="11" fill="#667085">tinyint(1)</text>
+<text x="460" y="879" font-size="12" fill="#101828">created_at</text>
+<text x="610" y="879" font-size="11" fill="#667085">datetime</text>
+<rect x="813" y="697" width="270" height="250" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="810" y="694" width="270" height="250" rx="6" fill="#ffffff" stroke="#0b7a75" stroke-width="1.6"/>
+<path d="M 810 722 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#0b7a75"/>
+<text x="820" y="713" font-size="14" font-weight="bold" fill="#ffffff">opportunities</text>
+<text x="820" y="735" font-size="12" fill="#101828" font-weight="bold">opportunity_id</text>
+<text x="970" y="735" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="725" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="1059" y="735" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="811" y="740" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="753" font-size="12" fill="#101828">opportunity_name</text>
+<text x="970" y="753" font-size="11" fill="#667085">varchar(150)</text>
+<text x="820" y="771" font-size="12" fill="#101828">account_id</text>
+<text x="970" y="771" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="761" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1059" y="771" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="811" y="776" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="789" font-size="12" fill="#101828">primary_contact_id</text>
+<text x="970" y="789" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="779" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1059" y="789" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<text x="820" y="807" font-size="12" fill="#101828">lead_id</text>
+<text x="970" y="807" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="797" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1059" y="807" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="811" y="812" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="825" font-size="12" fill="#101828">owner_user_id</text>
+<text x="970" y="825" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="815" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1059" y="825" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<text x="820" y="843" font-size="12" fill="#101828">stage_id</text>
+<text x="970" y="843" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="833" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1059" y="843" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="811" y="848" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="861" font-size="12" fill="#101828">amount</text>
+<text x="970" y="861" font-size="11" fill="#667085">decimal(14,2)</text>
+<text x="820" y="879" font-size="12" fill="#101828">expected_close_date</text>
+<text x="970" y="879" font-size="11" fill="#667085">date</text>
+<rect x="811" y="884" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="897" font-size="12" fill="#101828">actual_close_date</text>
+<text x="970" y="897" font-size="11" fill="#667085">date</text>
+<text x="820" y="915" font-size="12" fill="#101828">loss_reason</text>
+<text x="970" y="915" font-size="11" fill="#667085">varchar(255)</text>
+<rect x="811" y="920" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="933" font-size="12" fill="#101828">created_at</text>
+<text x="970" y="933" font-size="11" fill="#667085">datetime</text>
+<rect x="1173" y="697" width="270" height="142" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="1170" y="694" width="270" height="142" rx="6" fill="#ffffff" stroke="#0b7a75" stroke-width="1.6"/>
+<path d="M 1170 722 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#0b7a75"/>
+<text x="1180" y="713" font-size="14" font-weight="bold" fill="#ffffff">pipeline_stages</text>
+<text x="1180" y="735" font-size="12" fill="#101828" font-weight="bold">stage_id</text>
+<text x="1330" y="735" font-size="11" fill="#667085">int</text>
+<rect x="1408" y="725" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="1419" y="735" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="1171" y="740" width="268" height="18" fill="#f5f7fa"/>
+<text x="1180" y="753" font-size="12" fill="#101828">stage_name</text>
+<text x="1330" y="753" font-size="11" fill="#667085">varchar(50)</text>
+<rect x="1408" y="743" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="1419" y="753" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<text x="1180" y="771" font-size="12" fill="#101828">stage_order</text>
+<text x="1330" y="771" font-size="11" fill="#667085">tinyint u</text>
+<rect x="1408" y="761" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="1419" y="771" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<rect x="1171" y="776" width="268" height="18" fill="#f5f7fa"/>
+<text x="1180" y="789" font-size="12" fill="#101828">win_probability</text>
+<text x="1330" y="789" font-size="11" fill="#667085">tinyint u</text>
+<text x="1180" y="807" font-size="12" fill="#101828">is_closed</text>
+<text x="1330" y="807" font-size="11" fill="#667085">tinyint(1)</text>
+<rect x="1171" y="812" width="268" height="18" fill="#f5f7fa"/>
+<text x="1180" y="825" font-size="12" fill="#101828">is_won</text>
+<text x="1330" y="825" font-size="11" fill="#667085">tinyint(1)</text>
+<rect x="1533" y="697" width="270" height="142" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="1530" y="694" width="270" height="142" rx="6" fill="#ffffff" stroke="#0b7a75" stroke-width="1.6"/>
+<path d="M 1530 722 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#0b7a75"/>
+<text x="1540" y="713" font-size="14" font-weight="bold" fill="#ffffff">opportunity_stage_history</text>
+<text x="1540" y="735" font-size="12" fill="#101828" font-weight="bold">history_id</text>
+<text x="1690" y="735" font-size="11" fill="#667085">int</text>
+<rect x="1768" y="725" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="1779" y="735" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="1531" y="740" width="268" height="18" fill="#f5f7fa"/>
+<text x="1540" y="753" font-size="12" fill="#101828">opportunity_id</text>
+<text x="1690" y="753" font-size="11" fill="#667085">int</text>
+<rect x="1768" y="743" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1779" y="753" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<text x="1540" y="771" font-size="12" fill="#101828">from_stage_id</text>
+<text x="1690" y="771" font-size="11" fill="#667085">int</text>
+<rect x="1768" y="761" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1779" y="771" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="1531" y="776" width="268" height="18" fill="#f5f7fa"/>
+<text x="1540" y="789" font-size="12" fill="#101828">to_stage_id</text>
+<text x="1690" y="789" font-size="11" fill="#667085">int</text>
+<rect x="1768" y="779" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1779" y="789" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<text x="1540" y="807" font-size="12" fill="#101828">changed_by</text>
+<text x="1690" y="807" font-size="11" fill="#667085">int</text>
+<rect x="1768" y="797" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1779" y="807" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="1531" y="812" width="268" height="18" fill="#f5f7fa"/>
+<text x="1540" y="825" font-size="12" fill="#101828">changed_at</text>
+<text x="1690" y="825" font-size="11" fill="#667085">datetime</text>
+<rect x="453" y="1017" width="270" height="232" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="450" y="1014" width="270" height="232" rx="6" fill="#ffffff" stroke="#0b7a75" stroke-width="1.6"/>
+<path d="M 450 1042 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#0b7a75"/>
+<text x="460" y="1033" font-size="14" font-weight="bold" fill="#ffffff">activities</text>
+<text x="460" y="1055" font-size="12" fill="#101828" font-weight="bold">activity_id</text>
+<text x="610" y="1055" font-size="11" fill="#667085">int</text>
+<rect x="688" y="1045" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="699" y="1055" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="451" y="1060" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="1073" font-size="12" fill="#101828">activity_type</text>
+<text x="610" y="1073" font-size="11" fill="#667085">varchar(20)</text>
+<text x="460" y="1091" font-size="12" fill="#101828">subject</text>
+<text x="610" y="1091" font-size="11" fill="#667085">varchar(150)</text>
+<rect x="451" y="1096" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="1109" font-size="12" fill="#101828">activity_date</text>
+<text x="610" y="1109" font-size="11" fill="#667085">datetime</text>
+<text x="460" y="1127" font-size="12" fill="#101828">duration_minutes</text>
+<text x="610" y="1127" font-size="11" fill="#667085">smallint</text>
+<rect x="451" y="1132" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="1145" font-size="12" fill="#101828">status</text>
+<text x="610" y="1145" font-size="11" fill="#667085">varchar(20)</text>
+<text x="460" y="1163" font-size="12" fill="#101828">owner_user_id</text>
+<text x="610" y="1163" font-size="11" fill="#667085">int</text>
+<rect x="688" y="1153" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="699" y="1163" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="451" y="1168" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="1181" font-size="12" fill="#101828">contact_id</text>
+<text x="610" y="1181" font-size="11" fill="#667085">int</text>
+<rect x="688" y="1171" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="699" y="1181" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<text x="460" y="1199" font-size="12" fill="#101828">lead_id</text>
+<text x="610" y="1199" font-size="11" fill="#667085">int</text>
+<rect x="688" y="1189" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="699" y="1199" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="451" y="1204" width="268" height="18" fill="#f5f7fa"/>
+<text x="460" y="1217" font-size="12" fill="#101828">opportunity_id</text>
+<text x="610" y="1217" font-size="11" fill="#667085">int</text>
+<rect x="688" y="1207" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="699" y="1217" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<text x="460" y="1235" font-size="12" fill="#101828">notes</text>
+<text x="610" y="1235" font-size="11" fill="#667085">varchar(500)</text>
+<rect x="813" y="1017" width="270" height="160" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="810" y="1014" width="270" height="160" rx="6" fill="#ffffff" stroke="#2e7d32" stroke-width="1.6"/>
+<path d="M 810 1042 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#2e7d32"/>
+<text x="820" y="1033" font-size="14" font-weight="bold" fill="#ffffff">invoices</text>
+<text x="820" y="1055" font-size="12" fill="#101828" font-weight="bold">invoice_id</text>
+<text x="970" y="1055" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="1045" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="1059" y="1055" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="811" y="1060" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="1073" font-size="12" fill="#101828">invoice_number</text>
+<text x="970" y="1073" font-size="11" fill="#667085">varchar(20)</text>
+<rect x="1048" y="1063" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="1059" y="1073" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<text x="820" y="1091" font-size="12" fill="#101828">opportunity_id</text>
+<text x="970" y="1091" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="1081" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="1059" y="1091" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<rect x="1022" y="1081" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1033" y="1091" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="811" y="1096" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="1109" font-size="12" fill="#101828">invoice_date</text>
+<text x="970" y="1109" font-size="11" fill="#667085">date</text>
+<text x="820" y="1127" font-size="12" fill="#101828">due_date</text>
+<text x="970" y="1127" font-size="11" fill="#667085">date</text>
+<rect x="811" y="1132" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="1145" font-size="12" fill="#101828">total_amount</text>
+<text x="970" y="1145" font-size="11" fill="#667085">decimal(14,2)</text>
+<text x="820" y="1163" font-size="12" fill="#101828">status</text>
+<text x="970" y="1163" font-size="11" fill="#667085">varchar(20)</text>
+<rect x="1173" y="1017" width="270" height="142" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="1170" y="1014" width="270" height="142" rx="6" fill="#ffffff" stroke="#0b7a75" stroke-width="1.6"/>
+<path d="M 1170 1042 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#0b7a75"/>
+<text x="1180" y="1033" font-size="14" font-weight="bold" fill="#ffffff">opportunity_products</text>
+<text x="1180" y="1055" font-size="12" fill="#101828" font-weight="bold">opportunity_id</text>
+<text x="1330" y="1055" font-size="11" fill="#667085">int</text>
+<rect x="1408" y="1045" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1419" y="1055" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="1382" y="1045" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="1393" y="1055" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="1171" y="1060" width="268" height="18" fill="#f5f7fa"/>
+<text x="1180" y="1073" font-size="12" fill="#101828" font-weight="bold">product_id</text>
+<text x="1330" y="1073" font-size="11" fill="#667085">int</text>
+<rect x="1408" y="1063" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1419" y="1073" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<rect x="1382" y="1063" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="1393" y="1073" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<text x="1180" y="1091" font-size="12" fill="#101828">quantity</text>
+<text x="1330" y="1091" font-size="11" fill="#667085">int</text>
+<rect x="1171" y="1096" width="268" height="18" fill="#f5f7fa"/>
+<text x="1180" y="1109" font-size="12" fill="#101828">unit_price</text>
+<text x="1330" y="1109" font-size="11" fill="#667085">decimal(12,2)</text>
+<text x="1180" y="1127" font-size="12" fill="#101828">discount_pct</text>
+<text x="1330" y="1127" font-size="11" fill="#667085">decimal(5,2)</text>
+<rect x="1171" y="1132" width="268" height="18" fill="#f5f7fa"/>
+<text x="1180" y="1145" font-size="12" fill="#101828">line_total</text>
+<text x="1330" y="1145" font-size="11" fill="#667085">decimal(14,2)</text>
+<rect x="1533" y="1017" width="270" height="142" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="1530" y="1014" width="270" height="142" rx="6" fill="#ffffff" stroke="#0b7a75" stroke-width="1.6"/>
+<path d="M 1530 1042 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#0b7a75"/>
+<text x="1540" y="1033" font-size="14" font-weight="bold" fill="#ffffff">products</text>
+<text x="1540" y="1055" font-size="12" fill="#101828" font-weight="bold">product_id</text>
+<text x="1690" y="1055" font-size="11" fill="#667085">int</text>
+<rect x="1768" y="1045" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="1779" y="1055" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="1531" y="1060" width="268" height="18" fill="#f5f7fa"/>
+<text x="1540" y="1073" font-size="12" fill="#101828">product_code</text>
+<text x="1690" y="1073" font-size="11" fill="#667085">varchar(20)</text>
+<rect x="1768" y="1063" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="1779" y="1073" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<text x="1540" y="1091" font-size="12" fill="#101828">product_name</text>
+<text x="1690" y="1091" font-size="11" fill="#667085">varchar(120)</text>
+<rect x="1531" y="1096" width="268" height="18" fill="#f5f7fa"/>
+<text x="1540" y="1109" font-size="12" fill="#101828">category</text>
+<text x="1690" y="1109" font-size="11" fill="#667085">varchar(20)</text>
+<text x="1540" y="1127" font-size="12" fill="#101828">unit_price</text>
+<text x="1690" y="1127" font-size="11" fill="#667085">decimal(12,2)</text>
+<rect x="1531" y="1132" width="268" height="18" fill="#f5f7fa"/>
+<text x="1540" y="1145" font-size="12" fill="#101828">is_active</text>
+<text x="1690" y="1145" font-size="11" fill="#667085">tinyint(1)</text>
+<rect x="813" y="1319" width="270" height="142" rx="6" fill="#d0d5dd" opacity="0.6"/>
+<rect x="810" y="1316" width="270" height="142" rx="6" fill="#ffffff" stroke="#2e7d32" stroke-width="1.6"/>
+<path d="M 810 1344 v -22 q 0 -6 6 -6 h 258 q 6 0 6 6 v 22 z" fill="#2e7d32"/>
+<text x="820" y="1335" font-size="14" font-weight="bold" fill="#ffffff">payments</text>
+<text x="820" y="1357" font-size="12" fill="#101828" font-weight="bold">payment_id</text>
+<text x="970" y="1357" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="1347" width="22" height="13" rx="3" fill="#fef0c7"/>
+<text x="1059" y="1357" font-size="9" font-weight="bold" fill="#b54708" text-anchor="middle">PK</text>
+<rect x="811" y="1362" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="1375" font-size="12" fill="#101828">invoice_id</text>
+<text x="970" y="1375" font-size="11" fill="#667085">int</text>
+<rect x="1048" y="1365" width="22" height="13" rx="3" fill="#d1e9ff"/>
+<text x="1059" y="1375" font-size="9" font-weight="bold" fill="#175cd3" text-anchor="middle">FK</text>
+<text x="820" y="1393" font-size="12" fill="#101828">payment_date</text>
+<text x="970" y="1393" font-size="11" fill="#667085">date</text>
+<rect x="811" y="1398" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="1411" font-size="12" fill="#101828">amount</text>
+<text x="970" y="1411" font-size="11" fill="#667085">decimal(14,2)</text>
+<text x="820" y="1429" font-size="12" fill="#101828">payment_method</text>
+<text x="970" y="1429" font-size="11" fill="#667085">varchar(20)</text>
+<rect x="811" y="1434" width="268" height="18" fill="#f5f7fa"/>
+<text x="820" y="1447" font-size="12" fill="#101828">reference_no</text>
+<text x="970" y="1447" font-size="11" fill="#667085">varchar(50)</text>
+<rect x="1048" y="1437" width="22" height="13" rx="3" fill="#d1fadf"/>
+<text x="1059" y="1447" font-size="9" font-weight="bold" fill="#067647" text-anchor="middle">UK</text>
+<rect x="1170" y="1326" width="630" height="150" rx="6" fill="#f9fafb" stroke="#d0d5dd"/>
+<text x="1184" y="1350" font-size="14" font-weight="bold" fill="#1d2939">Legend</text>
+<rect x="1184" y="1359" width="16" height="14" rx="3" fill="#5b6472"/>
+<text x="1208" y="1370" font-size="12" fill="#344054">Administration</text>
+<rect x="1394" y="1359" width="16" height="14" rx="3" fill="#1f6fb2"/>
+<text x="1418" y="1370" font-size="12" fill="#344054">Accounts &amp; contacts</text>
+<rect x="1604" y="1359" width="16" height="14" rx="3" fill="#7b3fb8"/>
+<text x="1628" y="1370" font-size="12" fill="#344054">Marketing &amp; leads</text>
+<rect x="1184" y="1383" width="16" height="14" rx="3" fill="#0b7a75"/>
+<text x="1208" y="1394" font-size="12" fill="#344054">Sales pipeline</text>
+<rect x="1394" y="1383" width="16" height="14" rx="3" fill="#c0622a"/>
+<text x="1418" y="1394" font-size="12" fill="#344054">Customer support</text>
+<rect x="1604" y="1383" width="16" height="14" rx="3" fill="#2e7d32"/>
+<text x="1628" y="1394" font-size="12" fill="#344054">Billing</text>
+<line x1="1184.0" y1="1434.0" x2="1234.0" y2="1434.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1192.0" y1="1441.0" x2="1192.0" y2="1427.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1198.0" y1="1441.0" x2="1198.0" y2="1427.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1220.0" y1="1434.0" x2="1234.0" y2="1442.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1220.0" y1="1434.0" x2="1234.0" y2="1434.0" stroke="#344054" stroke-width="1.4"/>
+<line x1="1220.0" y1="1434.0" x2="1234.0" y2="1426.0" stroke="#344054" stroke-width="1.4"/>
+<circle cx="1210.0" cy="1434.0" r="4.5" fill="#ffffff" stroke="#344054" stroke-width="1.4"/>
+<text x="1246" y="1438" font-size="12" fill="#344054">one (left) to zero-or-many (right); a circle means optional</text>
+<text x="1184" y="1462" font-size="11" fill="#667085">Owner links (owner_user_id, assigned_user_id, changed_by -&gt; users) are omitted for readability; see docs/ERD.md.</text>
+</svg>
