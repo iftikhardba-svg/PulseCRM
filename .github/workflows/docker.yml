@@ -1,0 +1,74 @@
+# Builds PulseCRM with docker-compose.yml on every push and checks the result:
+# all database objects and sample rows exist, every query runs, and only the
+# seven integrity tests in Section 7 of queries.sql fail, with the expected errors.
+
+name: Docker build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  docker:
+    name: MySQL ${{ matrix.mysql }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mysql: ["8.0", "8.4"]
+    env:
+      PULSECRM_MYSQL_TAG: ${{ matrix.mysql }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v5
+
+      - name: Validate docker-compose.yml
+        run: docker compose config --quiet
+
+      - name: Start the database
+        run: docker compose up -d --wait --wait-timeout 300
+
+      - name: Check database objects and sample rows
+        run: |
+          cat > check.sql <<'SQL'
+          SELECT VERSION();
+          SELECT CONCAT_WS(' ',
+            (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'pulse_crm' AND table_type = 'BASE TABLE'),
+            (SELECT COUNT(*) FROM information_schema.views WHERE table_schema = 'pulse_crm'),
+            (SELECT COUNT(*) FROM information_schema.routines WHERE routine_schema = 'pulse_crm' AND routine_type = 'PROCEDURE'),
+            (SELECT COUNT(*) FROM information_schema.triggers WHERE trigger_schema = 'pulse_crm'),
+            (SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema = 'pulse_crm'),
+            (SELECT COUNT(*) FROM information_schema.check_constraints WHERE constraint_schema = 'pulse_crm'),
+            (SELECT (SELECT COUNT(*) FROM roles) + (SELECT COUNT(*) FROM users) + (SELECT COUNT(*) FROM industries)
+                  + (SELECT COUNT(*) FROM accounts) + (SELECT COUNT(*) FROM contacts) + (SELECT COUNT(*) FROM lead_sources)
+                  + (SELECT COUNT(*) FROM leads) + (SELECT COUNT(*) FROM pipeline_stages) + (SELECT COUNT(*) FROM opportunities)
+                  + (SELECT COUNT(*) FROM products) + (SELECT COUNT(*) FROM opportunity_products) + (SELECT COUNT(*) FROM activities)
+                  + (SELECT COUNT(*) FROM campaigns) + (SELECT COUNT(*) FROM campaign_leads) + (SELECT COUNT(*) FROM tickets)
+                  + (SELECT COUNT(*) FROM invoices) + (SELECT COUNT(*) FROM payments) + (SELECT COUNT(*) FROM opportunity_stage_history)));
+          SQL
+          out=$(docker compose exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -B pulse_crm' < check.sql)
+          echo "MySQL version: $(echo "$out" | sed -n 1p)"
+          counts=$(echo "$out" | sed -n 2p)
+          echo "Tables, views, procedures, triggers, foreign keys, CHECKs, rows: $counts"
+          test "$counts" = "18 6 5 1 31 34 305"
+
+      - name: Run database/queries.sql
+        run: |
+          set +e
+          # Same command as in the README, plus -T because CI has no terminal
+          docker compose exec -T db sh -c 'mysql -uroot -p$MYSQL_ROOT_PASSWORD -t --force pulse_crm < /pulsecrm/queries.sql' > queries.out 2> queries.err
+          set -e
+          cat queries.out
+          grep '^ERROR' queries.err || true
+          codes=$(grep -o '^ERROR [0-9]*' queries.err | cut -d' ' -f2 | tr '\n' ' ' || true)
+          echo "Error codes: $codes"
+          test "$codes" = "3819 1062 1452 1451 1644 1644 1644 "
+
+      - name: Show MySQL logs
+        if: failure()
+        run: docker compose logs db
+
+      - name: Remove the container and data
+        if: always()
+        run: docker compose down -v

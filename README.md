@@ -3,6 +3,7 @@
 **A relational database for Customer Relationship Management, built in MySQL 8.0.**
 
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)
+[![Docker build](https://github.com/iftikhardba-svg/PulseCRM/actions/workflows/docker.yml/badge.svg)](https://github.com/iftikhardba-svg/PulseCRM/actions/workflows/docker.yml)
 ![SQL](https://img.shields.io/badge/Language-SQL-orange)
 ![Tables](https://img.shields.io/badge/Tables-18-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
@@ -23,6 +24,7 @@ PulseCRM stores everything a B2B sales and service team needs: leads, accounts, 
 - [Tables](#tables)
 - [Repository Structure](#repository-structure)
 - [Getting Started](#getting-started)
+- [Run with Docker](#run-with-docker)
 - [Views, Procedures and Trigger](#views-procedures-and-trigger)
 - [Sample Results](#sample-results)
 - [Data Integrity Tests](#data-integrity-tests)
@@ -174,6 +176,9 @@ PulseCRM/
 ├── PROMPT.md                  Complete prompt used to generate the project
 ├── LICENSE                    MIT licence
 ├── .gitignore
+├── docker-compose.yml         Runs MySQL and builds the database with one command
+├── .github/workflows/
+│   └── docker.yml             Tests the Docker build on MySQL 8.0 and 8.4
 ├── database/
 │   ├── pulse_crm.sql        ONE script: schema, constraints, indexes, sample data,
 │   │                          views, trigger and stored procedures
@@ -195,6 +200,8 @@ PulseCRM/
 
 - MySQL Server **8.0.16 or later** (CHECK constraints are enforced from 8.0.16)
 - MySQL Workbench 8.0, or the `mysql` command-line client
+
+No MySQL on your computer? See [Run with Docker](#run-with-docker).
 
 ### 1. Clone the repository
 
@@ -220,6 +227,71 @@ Open `database/queries.sql` in Workbench and run the queries one section at a ti
 
 - Sections 6 and 7 **change data**: they convert a lead, close a deal and record a payment. Rebuild the database with `pulse_crm.sql` before running them a second time.
 - Section 7 statements are **expected to fail**. Workbench stops at the first error when it runs a whole script, so run those one at a time.
+
+---
+
+## Run with Docker
+
+If you have [Docker Desktop](https://www.docker.com/products/docker-desktop/), you can run PulseCRM without installing MySQL. The included `docker-compose.yml` starts MySQL 8.4 and, on the first start, builds the `pulse_crm` database from `database/pulse_crm.sql`.
+
+```bash
+git clone https://github.com/iftikhardba-svg/PulseCRM.git
+cd PulseCRM
+docker compose up -d --wait
+```
+
+The command returns once the database is built and ready. The first run takes a minute or two while Docker downloads the MySQL image.
+
+### Connect
+
+| Setting | Value |
+|---|---|
+| Host | `127.0.0.1` |
+| Port | `3307` |
+| User | `root` |
+| Password | `pulsecrm` |
+| Schema | `pulse_crm` |
+
+**MySQL Workbench:** create a new connection with these settings.
+
+**Command line inside the container** (asks for the password):
+
+```bash
+docker compose exec db mysql -uroot -p pulse_crm
+```
+
+The port is 3307, not 3306, so the container does not clash with a MySQL server already installed on your computer. It only accepts connections from your own computer, and the password is meant for local demos only.
+
+### Run all the queries
+
+```bash
+docker compose exec db sh -c 'mysql -uroot -p$MYSQL_ROOT_PASSWORD -t --force pulse_crm < /pulsecrm/queries.sql'
+```
+
+This works in PowerShell, bash and zsh. `--force` lets the script carry on past the seven Section 7 integrity tests, which are meant to fail; their errors are printed with the results.
+
+### Stop and reset
+
+| Task | Command |
+|---|---|
+| Stop, keeping the data | `docker compose stop` |
+| Start again | `docker compose start` |
+| Reset to the original sample data | `docker compose down -v`, then `docker compose up -d --wait` |
+| Remove the container and its data | `docker compose down -v` |
+
+The build script only runs when the data volume is empty. Reset after you run Sections 6 and 7 of `queries.sql`, or after you change `pulse_crm.sql`.
+
+### Settings
+
+To change a default, set the variable in your shell or in a `.env` file next to `docker-compose.yml`, then run `docker compose up -d --wait`:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PULSECRM_PORT` | `3307` | Port on your computer |
+| `PULSECRM_ROOT_PASSWORD` | `pulsecrm` | `root` password. It is only applied when the database is first built, so reset after changing it |
+| `PULSECRM_MYSQL_TAG` | `8.4` | MySQL image tag, for example `8.0` |
+
+Every push to this repository runs the [Docker build](.github/workflows/docker.yml) workflow. It builds the database with MySQL 8.0 and 8.4, checks all objects and the 305 sample rows, and runs `queries.sql`, expecting the seven integrity tests to fail with the errors listed in [Data Integrity Tests](#data-integrity-tests).
 
 ---
 

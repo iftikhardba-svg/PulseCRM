@@ -1,0 +1,35 @@
+# PulseCRM - run the database with Docker
+#
+#   docker compose up -d --wait
+#
+# The first start builds the pulse_crm database from database/pulse_crm.sql
+# (18 tables, 305 sample rows, views, trigger and procedures).
+# Connect to 127.0.0.1:3307 as root, password pulsecrm (local demos only).
+# Reset to the original data with: docker compose down -v
+
+name: pulsecrm
+
+services:
+  db:
+    image: mysql:${PULSECRM_MYSQL_TAG:-8.4}
+    environment:
+      MYSQL_ROOT_PASSWORD: ${PULSECRM_ROOT_PASSWORD:-pulsecrm}
+    ports:
+      # Reachable from this computer only; 3307 avoids a local MySQL on 3306
+      - "127.0.0.1:${PULSECRM_PORT:-3307}:3306"
+    volumes:
+      # Runs once, when the data volume is still empty
+      - ./database/pulse_crm.sql:/docker-entrypoint-initdb.d/01_pulse_crm.sql:ro
+      # Makes queries.sql available inside the container
+      - ./database:/pulsecrm:ro
+      - pulsecrm_data:/var/lib/mysql
+    healthcheck:
+      # Healthy only after the build script has finished and MySQL accepts TCP connections
+      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" -e 'SELECT 1 FROM pulse_crm.accounts LIMIT 1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+volumes:
+  pulsecrm_data:

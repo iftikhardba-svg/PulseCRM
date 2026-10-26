@@ -14,6 +14,9 @@ desktop.ini
 *.cnf
 *.my.cnf
 
+# Local Docker settings (port, password)
+.env
+
 # Local database dumps and logs (keep only the build script in database/)
 backups/
 *.dump
