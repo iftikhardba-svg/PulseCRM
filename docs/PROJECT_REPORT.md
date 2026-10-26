@@ -8,7 +8,7 @@
 | **Course** | Relational Database Management Systems (RDBMS) |
 | **Programme** | Postgraduate Diploma in Generative AI |
 | **University** | NED University of Engineering & Technology, Karachi |
-| **Instructor** | Sir Sajid |
+| **Instructor** | Sir Sajid Majeed |
 | **Term** | Fall-I-2026 |
 
 ---

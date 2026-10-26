@@ -44,7 +44,7 @@ PulseCRM stores everything a B2B sales and service team needs: leads, accounts, 
 | **Course** | Relational Database Management Systems (RDBMS) |
 | **Programme** | Postgraduate Diploma in Generative AI |
 | **University** | NED University of Engineering & Technology, Karachi |
-| **Instructor** | Sir Sajid |
+| **Instructor** | Sir Sajid Majeed |
 | **Term** | Fall-I-2026 |
 | **DBMS** | MySQL 8.0 (InnoDB, utf8mb4) |
 | **Tools** | MySQL Workbench 8.0, Git, GitHub |
