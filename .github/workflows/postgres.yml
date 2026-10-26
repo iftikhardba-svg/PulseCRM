@@ -1,0 +1,59 @@
+# Checks that database/pulse_crm_postgres.sql (used by the live dashboard on Supabase)
+# matches database/pulse_crm.sql: both are built side by side and compared table by table,
+# view by view, page by page, and through the integrity tests and stored procedures.
+
+name: PostgreSQL port
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  compare:
+    name: MySQL 8.4 vs PostgreSQL ${{ matrix.postgres }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: ["15", "17"]
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+      MYSQL_URL: mysql://root:pulsecrm@127.0.0.1:3307/pulse_crm
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v5
+
+      - name: Install Python packages
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet -r web/requirements.txt
+
+      - name: Build MySQL with docker-compose.yml
+        run: docker compose up -d --wait --wait-timeout 300
+
+      - name: Build PostgreSQL with web/setup_supabase.py
+        run: .venv/bin/python web/setup_supabase.py
+
+      - name: Compare MySQL and PostgreSQL
+        run: .venv/bin/python .github/scripts/compare_mysql_postgres.py
+
+      - name: Show MySQL logs
+        if: failure()
+        run: docker compose logs db
+
+      - name: Remove MySQL
+        if: always()
+        run: docker compose down -v
