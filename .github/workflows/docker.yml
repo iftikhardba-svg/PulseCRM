@@ -1,6 +1,7 @@
 # Builds PulseCRM with docker-compose.yml on every push and checks the result:
-# all database objects and sample rows exist, every query runs, and only the
-# seven integrity tests in Section 7 of queries.sql fail, with the expected errors.
+# all database objects and sample rows exist, the web dashboard serves every page
+# through its read-only account, every query runs, and only the seven integrity
+# tests in Section 7 of queries.sql fail, with the expected errors.
 
 name: Docker build
 
@@ -52,6 +53,14 @@ jobs:
           counts=$(echo "$out" | sed -n 2p)
           echo "Tables, views, procedures, triggers, foreign keys, CHECKs, rows: $counts"
           test "$counts" = "18 6 5 1 31 34 305"
+
+      - name: Check the web dashboard
+        env:
+          MYSQL_URL: mysql://root:pulsecrm@127.0.0.1:3307/pulse_crm
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet -r web/requirements.txt
+          .venv/bin/python .github/scripts/check_web.py
 
       - name: Run database/queries.sql
         run: |

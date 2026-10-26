@@ -2,14 +2,14 @@
 {% block title %}Database{% endblock %}
 {% block content %}
 <h1>The database behind this site</h1>
-<p class="lead">This site runs on MySQL {{ version }}, using the same <code>database/pulse_crm.sql</code> script that is
-  in the repository and submitted with the project: 18 tables in third normal form, 31 foreign keys, 34 CHECK
-  constraints, 14 unique keys, 6 views, 5 stored procedures and 1 trigger.</p>
+<p class="lead">This site runs on MySQL {{ version }}, using the project script
+  <a href="{{ github }}/blob/main/database/pulse_crm.sql"><code>database/pulse_crm.sql</code></a> unchanged: 18 tables in
+  third normal form, 31 foreign keys, 34 CHECK constraints, 14 unique keys, 6 views, 5 stored procedures and 1 trigger.</p>
 
 <div class="note-box">
-  <strong>Read-only by design.</strong> The website connects as a separate MySQL user with <code>SELECT</code> privilege
-  only, and sets every session to <code>READ ONLY</code>. The stored procedures that change data
-  (<code>sp_convert_lead</code>, <code>sp_update_opportunity_stage</code>, <code>sp_record_payment</code>) run in
+  <strong>Read-only by design.</strong> The website connects as a separate MySQL user with <code>SELECT</code>
+  privilege only, and every transaction is <code>READ ONLY</code>. The stored procedures that change data
+  (<code>sp_convert_lead</code>, <code>sp_update_opportunity_stage</code>, <code>sp_record_payment</code>) are run from
   MySQL Workbench, not from this site.
 </div>
 
@@ -38,7 +38,7 @@
     <h2>Integrity rules the database enforces</h2>
     <div class="table-wrap">
       <table>
-        <tr><th>Attempt</th><th>Rejected by</th><th>MySQL error</th></tr>
+        <tr><th>Attempt</th><th>Rejected by</th><th class="n">MySQL error</th></tr>
         <tr><td>Lead score of 150</td><td><code>chk_leads_score</code></td><td class="n">3819</td></tr>
         <tr><td>Duplicate contact e-mail</td><td><code>uq_contacts_email</code></td><td class="n">1062</td></tr>
         <tr><td>Deal for a missing account</td><td><code>fk_opportunities_account</code></td><td class="n">1452</td></tr>

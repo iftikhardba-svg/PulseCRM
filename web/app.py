@@ -1,8 +1,8 @@
 """PulseCRM web dashboard: a read-only Flask app on top of the pulse_crm MySQL database.
 
-Every page reads the reporting views and tables with SELECT statements only. The
-database account used by the app has SELECT privileges and nothing else, and each
-session is also set to READ ONLY, so the dashboard cannot change data.
+Every page reads the reporting views and tables of database/pulse_crm.sql with SELECT
+statements only. The database account used by the app has SELECT privileges and nothing
+else, and each session is also set to READ ONLY, so the dashboard cannot change data.
 
 Environment variables:
   DATABASE_URL      mysql://user:password@host:port/pulse_crm
@@ -43,13 +43,20 @@ class DatabaseUnavailable(Exception):
     pass
 
 
+def database_url():
+    return os.environ.get("DATABASE_URL", "").strip()
+
+
+def ca_cert():
+    return os.environ.get("DATABASE_CA_CERT", "").strip().replace("\\n", "\n")
+
+
 def connect():
-    if not os.environ.get("DATABASE_URL"):
+    if not database_url():
         raise DatabaseUnavailable("DATABASE_URL is not set")
-    url = urlparse(os.environ["DATABASE_URL"])
-    ca = os.environ.get("DATABASE_CA_CERT", "").strip()
-    if ca:
-        tls = ssl.create_default_context(cadata=ca.replace("\\n", "\n"))
+    url = urlparse(database_url())
+    if ca_cert():
+        tls = ssl.create_default_context(cadata=ca_cert())
     elif parse_qs(url.query).get("ssl-mode", [""])[0].upper() == "REQUIRED":
         # Encrypted but unverified; set DATABASE_CA_CERT to verify the server
         tls = ssl.create_default_context()
@@ -85,6 +92,13 @@ def fetch(**queries):
 def database_unavailable(error):
     app.logger.error("Database error: %s", error)
     return render_template("offline.html", page="offline"), 503
+
+
+# sort orders and the open-ticket test used by several queries
+PRIORITY_ORDER = "CASE priority WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END"
+LEAD_STATUS_ORDER = ("CASE status WHEN 'New' THEN 1 WHEN 'Contacted' THEN 2 WHEN 'Qualified' THEN 3 "
+                     "WHEN 'Unqualified' THEN 4 ELSE 5 END")
+IS_OPEN_TICKET = "CASE WHEN status IN ('Open', 'In Progress') THEN 1 ELSE 0 END"
 
 
 # --------------------------------------------------------------------------- formatting
@@ -154,7 +168,7 @@ def overview():
         top_accounts="""
             SELECT account_name, industry_name, account_type, won_revenue, open_pipeline_value
             FROM vw_account_360
-            ORDER BY won_revenue DESC, open_pipeline_value DESC
+            ORDER BY won_revenue DESC, open_pipeline_value DESC, account_name
             LIMIT 5""",
         sources="""
             SELECT source_name, total_leads, converted_leads, conversion_rate_pct
@@ -179,12 +193,12 @@ def pipeline():
                    amount, weighted_amount, expected_close_date
             FROM vw_sales_pipeline
             WHERE is_closed = FALSE
-            ORDER BY stage_order DESC, amount DESC""",
+            ORDER BY stage_order DESC, amount DESC, opportunity_id""",
         closed_deals="""
             SELECT opportunity_name, account_name, owner_name, stage_name, is_won, amount, actual_close_date
             FROM vw_sales_pipeline
             WHERE is_closed = TRUE
-            ORDER BY actual_close_date DESC, amount DESC""",
+            ORDER BY actual_close_date DESC, amount DESC, opportunity_id""",
     )
     return render_template("pipeline.html", page="pipeline", **data)
 
@@ -205,7 +219,7 @@ def team():
         SELECT sales_rep, role_name, leads_owned, leads_converted, opportunities, won_deals,
                lost_deals, won_revenue, open_pipeline, win_rate_pct
         FROM vw_sales_rep_performance
-        ORDER BY won_revenue DESC, open_pipeline DESC""")
+        ORDER BY won_revenue DESC, open_pipeline DESC, sales_rep""")
     top = max((r["won_revenue"] for r in data["rows"]), default=0)
     for r in data["rows"]:
         r["bar"] = share(r["won_revenue"], top)
@@ -218,12 +232,12 @@ def leads():
         sources="""
             SELECT source_name, total_leads, converted_leads, conversion_rate_pct, avg_lead_score
             FROM vw_lead_conversion_by_source
-            ORDER BY conversion_rate_pct DESC, total_leads DESC""",
-        statuses="""
+            ORDER BY conversion_rate_pct DESC, total_leads DESC, source_name""",
+        statuses=f"""
             SELECT status, COUNT(*) AS leads
             FROM leads
             GROUP BY status
-            ORDER BY FIELD(status, 'New', 'Contacted', 'Qualified', 'Unqualified', 'Converted')""",
+            ORDER BY {LEAD_STATUS_ORDER}""",
         hot="""
             SELECT CONCAT(l.first_name, ' ', l.last_name) AS lead_name, l.company_name, ls.source_name,
                    l.lead_score, l.status, u.full_name AS owner_name
@@ -231,7 +245,7 @@ def leads():
             JOIN lead_sources ls ON l.source_id = ls.source_id
             JOIN users u         ON l.owner_user_id = u.user_id
             WHERE l.status IN ('New', 'Contacted', 'Qualified')
-            ORDER BY l.lead_score DESC
+            ORDER BY l.lead_score DESC, l.lead_id
             LIMIT 10""",
     )
     top = max((r["leads"] for r in data["statuses"]), default=0)
@@ -243,20 +257,19 @@ def leads():
 @app.route("/support")
 def support():
     data = fetch(
-        priorities="""
+        priorities=f"""
             SELECT priority, COUNT(*) AS tickets,
-                   SUM(status IN ('Open', 'In Progress')) AS open_tickets,
-                   ROUND(AVG(resolution_hours), 1)        AS avg_hours,
-                   ROUND(AVG(satisfaction_score), 1)      AS avg_score
+                   SUM({IS_OPEN_TICKET})               AS open_tickets,
+                   ROUND(AVG(resolution_hours), 1)     AS avg_hours,
+                   ROUND(AVG(satisfaction_score), 1)   AS avg_score
             FROM vw_ticket_resolution
             GROUP BY priority
-            ORDER BY FIELD(priority, 'Critical', 'High', 'Medium', 'Low')""",
-        tickets="""
+            ORDER BY {PRIORITY_ORDER}""",
+        tickets=f"""
             SELECT ticket_id, account_name, subject, priority, status, assigned_to,
                    opened_at, resolution_hours, satisfaction_score
             FROM vw_ticket_resolution
-            ORDER BY (status IN ('Open', 'In Progress')) DESC,
-                     FIELD(priority, 'Critical', 'High', 'Medium', 'Low'), opened_at DESC""",
+            ORDER BY {IS_OPEN_TICKET} DESC, {PRIORITY_ORDER}, opened_at DESC, ticket_id""",
     )
     return render_template("support.html", page="support", **data)
 
@@ -267,7 +280,7 @@ def invoices():
         SELECT invoice_number, account_name, opportunity_name, invoice_date, due_date,
                total_amount, amount_paid, balance_due, status
         FROM vw_invoice_balance
-        ORDER BY balance_due DESC, invoice_date DESC""")
+        ORDER BY balance_due DESC, invoice_date DESC, invoice_number""")
     return render_template("invoices.html", page="invoices", **data)
 
 

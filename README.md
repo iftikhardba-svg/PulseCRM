@@ -3,14 +3,15 @@
 **A relational database for Customer Relationship Management, built in MySQL 8.0.**
 
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)
-[![Docker build](https://github.com/iftikhardba-svg/PulseCRM/actions/workflows/docker.yml/badge.svg)](https://github.com/iftikhardba-svg/PulseCRM/actions/workflows/docker.yml)
-![SQL](https://img.shields.io/badge/Language-SQL-orange)
+[![Docker build](https://github.com/iftikhardba-svg/PulseCRM/actions/workflows/docker.yml/badge.svg)](https://github.com/iftikhardba-svg/PulseCRM/actions/workflows/docker.yml)![SQL](https://img.shields.io/badge/Language-SQL-orange)
 ![Tables](https://img.shields.io/badge/Tables-18-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 PulseCRM stores everything a B2B sales and service team needs: leads, accounts, contacts, deals, products, activities, marketing campaigns, support tickets, invoices and payments. The design is normalized to 3NF. Business rules are enforced inside the database with constraints, a trigger and transaction-safe stored procedures.
 
 > Final project for **Relational Database Management Systems (RDBMS)**, Postgraduate Diploma in Generative AI, NED University of Engineering & Technology, Karachi.
+
+**Live dashboard:** [pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app), a read-only reporting site on the sample data (Vercel + MySQL).
 
 ---
 
@@ -25,6 +26,7 @@ PulseCRM stores everything a B2B sales and service team needs: leads, accounts, 
 - [Repository Structure](#repository-structure)
 - [Getting Started](#getting-started)
 - [Run with Docker](#run-with-docker)
+- [Live Dashboard](#live-dashboard)
 - [Views, Procedures and Trigger](#views-procedures-and-trigger)
 - [Sample Results](#sample-results)
 - [Data Integrity Tests](#data-integrity-tests)
@@ -177,12 +179,15 @@ PulseCRM/
 ├── LICENSE                    MIT licence
 ├── .gitignore
 ├── docker-compose.yml         Runs MySQL and builds the database with one command
-├── .github/workflows/
-│   └── docker.yml             Tests the Docker build on MySQL 8.0 and 8.4
+├── .github/
+│   ├── workflows/docker.yml   Tests the Docker build and the web dashboard on MySQL 8.0 and 8.4
+│   └── scripts/check_web.py   Web dashboard check used by that workflow
 ├── database/
-│   ├── pulse_crm.sql        ONE script: schema, constraints, indexes, sample data,
-│   │                          views, trigger and stored procedures
-│   └── queries.sql            32 report and demonstration queries
+│   ├── pulse_crm.sql          ONE script: schema, constraints, indexes, sample data,
+│   │                          views, trigger and stored procedures (MySQL 8.0)
+│   ├── queries.sql            32 report and demonstration queries
+│   └── web_readonly_user.sql  Read-only account for the web dashboard
+├── web/                       Live dashboard: Flask app for Vercel (see web/README.md)
 └── docs/
     ├── PROJECT_REPORT.md      Full university project report
     ├── ERD.md                 Mermaid ERD, notation and relationship list
@@ -295,6 +300,22 @@ Every push to this repository runs the [Docker build](.github/workflows/docker.y
 
 ---
 
+## Live Dashboard
+
+**[pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app)** is a read-only reporting website built on the six views. It has eight pages: Overview, Pipeline, Accounts (Account 360), Sales Team, Leads, Support, Invoices, and a Database page with live row counts and the ER diagram.
+
+| Part | Technology |
+|---|---|
+| Website | Python Flask app in [`web/`](web/README.md), hosted on Vercel |
+| Database | MySQL 8 on Aiven (free plan), built with the unchanged [`database/pulse_crm.sql`](database/pulse_crm.sql) |
+| Access | Read-only account `pulse_web` (`SELECT` only, [`database/web_readonly_user.sql`](database/web_readonly_user.sql)); every session is also `READ ONLY` |
+
+The [Docker build](.github/workflows/docker.yml) workflow tests the dashboard on every push. It opens every page as `pulse_web` on MySQL 8.0 and 8.4, and checks that the account is refused when it tries to change data.
+
+Aiven may switch a free MySQL service off when nobody uses it. When that happens, the site shows a short "database is offline" page until the service is switched back on in the Aiven console. Setup steps are in [web/README.md](web/README.md).
+
+---
+
 ## Views, Procedures and Trigger
 
 | Object | Type | What it does |
@@ -373,7 +394,7 @@ Each test below was run against the database and rejected with the error shown:
 ## Future Work
 
 - Role-based database users with `GRANT`, plus a read-only reporting account
-- A web front end (for example Flask or Laravel) on top of the procedures
+- Data entry screens in the web dashboard (it is read-only today) that call the stored procedures, with user login
 - Scheduled events to mark invoices as overdue automatically
 - Monthly sales targets per representative, and a dashboard in Power BI
 
