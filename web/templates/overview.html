@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<h1>Sales and service overview</h1>
+<p class="lead">Live figures from the <code>pulse_crm</code> MySQL database. Every number on this site is the result of a
+  SQL query against its tables and reporting views.</p>
+
+<div class="grid kpis">
+  <div class="card kpi"><div class="label">Open pipeline</div><div class="value"><span class="unit">PKR</span>{{ kpi.open_pipeline|amount }}</div>
+    <div class="note">{{ kpi.open_deals }} open deals</div></div>
+  <div class="card kpi"><div class="label">Weighted pipeline</div><div class="value"><span class="unit">PKR</span>{{ kpi.weighted_pipeline|amount }}</div>
+    <div class="note">amount × stage win probability</div></div>
+  <div class="card kpi"><div class="label">Won revenue</div><div class="value"><span class="unit">PKR</span>{{ kpi.won_revenue|amount }}</div>
+    <div class="note">deals closed as won</div></div>
+  <div class="card kpi"><div class="label">Balance due</div><div class="value"><span class="unit">PKR</span>{{ kpi.balance_due|amount }}</div>
+    <div class="note">invoiced but not yet paid</div></div>
+  <div class="card kpi"><div class="label">Accounts</div><div class="value">{{ kpi.accounts }}</div>
+    <div class="note">{{ kpi.customers }} customers</div></div>
+  <div class="card kpi"><div class="label">Leads</div><div class="value">{{ kpi.leads }}</div>
+    <div class="note">from {{ sources|length }} sources</div></div>
+  <div class="card kpi"><div class="label">Open tickets</div><div class="value">{{ kpi.open_tickets }}</div>
+    <div class="note">open or in progress</div></div>
+</div>
+
+<div class="grid two">
+  <div class="card">
+    <h2>Pipeline by stage</h2>
+    <div class="bars">
+      {% for r in stages %}
+        <div class="row">
+          <div>{{ r.stage_name }} <span class="muted">{{ r.win_probability|num }}%</span></div>
+          <div class="track"><div class="fill {{ 'won' if r.is_won else ('lost' if r.is_closed else '') }}"
+                                  style="width: {{ r.bar }}%"></div></div>
+          <div class="val">{{ r.deals }} · {{ r.amount|pkr }}</div>
+        </div>
+      {% endfor %}
+    </div>
+    <p class="muted" style="margin: 12px 0 0"><a href="/pipeline">Open deals and closed deals →</a></p>
+  </div>
+  <div class="card">
+    <h2>Leads by source</h2>
+    <div class="bars">
+      {% for r in sources %}
+        <div class="row">
+          <div>{{ r.source_name }}</div>
+          <div class="track"><div class="fill" style="width: {{ r.bar }}%"></div></div>
+          <div class="val">{{ r.total_leads }} leads · {{ r.conversion_rate_pct|pct }} converted</div>
+        </div>
+      {% endfor %}
+    </div>
+    <p class="muted" style="margin: 12px 0 0"><a href="/leads">Lead conversion →</a></p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Top accounts by won revenue</h2>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Account</th><th>Industry</th><th>Type</th><th class="n">Won revenue</th><th class="n">Open pipeline</th></tr>
+      {% for r in top_accounts %}
+        <tr><td>{{ r.account_name }}</td><td>{{ r.industry_name or '–' }}</td><td>{{ badge(r.account_type) }}</td>
+          <td class="n">{{ r.won_revenue|pkr }}</td><td class="n">{{ r.open_pipeline_value|pkr }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  <p class="muted" style="margin: 12px 0 0"><a href="/accounts">All accounts (Account 360 view) →</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Sales Team{% endblock %}
+{% block content %}
+<h1>Sales team scorecard</h1>
+<p class="lead">From the <code>vw_sales_rep_performance</code> view. Win rate is won deals divided by all closed deals
+  (won + lost).</p>
+
+<div class="card" style="margin-bottom: 18px">
+  <h2>Won revenue by representative</h2>
+  <div class="bars">
+    {% for r in rows %}
+      <div class="row">
+        <div>{{ r.sales_rep }}</div>
+        <div class="track"><div class="fill won" style="width: {{ r.bar }}%"></div></div>
+        <div class="val">{{ r.won_revenue|pkr }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="wide">
+      <tr><th>Representative</th><th>Role</th><th class="n">Leads</th><th class="n">Converted</th><th class="n">Deals</th>
+        <th class="n">Won</th><th class="n">Lost</th><th class="n">Win rate</th><th class="n">Won revenue</th>
+        <th class="n">Open pipeline</th></tr>
+      {% for r in rows %}
+        <tr><td>{{ r.sales_rep }}</td><td>{{ r.role_name }}</td><td class="n">{{ r.leads_owned }}</td>
+          <td class="n">{{ r.leads_converted|num }}</td><td class="n">{{ r.opportunities }}</td>
+          <td class="n">{{ r.won_deals|num }}</td><td class="n">{{ r.lost_deals|num }}</td>
+          <td class="n">{{ r.win_rate_pct|pct }}</td><td class="n">{{ r.won_revenue|pkr }}</td>
+          <td class="n">{{ r.open_pipeline|pkr }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge %}
+{% block title %}Invoices{% endblock %}
+{% block content %}
+<h1>Invoices and payments</h1>
+<p class="lead">From the <code>vw_invoice_balance</code> view. Closing a deal as won creates its invoice in the same
+  transaction, and <code>sp_record_payment</code> rejects any payment larger than the balance due.</p>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="wide">
+      <tr><th>Invoice</th><th>Account</th><th>Deal</th><th class="n">Issued</th><th class="n">Due</th>
+        <th class="n">Total</th><th class="n">Paid</th><th class="n">Balance</th><th>Status</th></tr>
+      {% for r in rows %}
+        <tr><td>{{ r.invoice_number }}</td><td>{{ r.account_name }}</td><td>{{ r.opportunity_name }}</td>
+          <td class="n">{{ r.invoice_date|day }}</td><td class="n">{{ r.due_date|day }}</td>
+          <td class="n">{{ r.total_amount|pkr }}</td><td class="n">{{ r.amount_paid|pkr }}</td>
+          <td class="n">{{ r.balance_due|pkr }}</td><td>{{ badge(r.status) }}</td></tr>
+      {% endfor %}
+      <tr><td colspan="5"><strong>Total</strong></td>
+        <td class="n"><strong>{{ rows|sum(attribute='total_amount')|pkr }}</strong></td>
+        <td class="n"><strong>{{ rows|sum(attribute='amount_paid')|pkr }}</strong></td>
+        <td class="n"><strong>{{ rows|sum(attribute='balance_due')|pkr }}</strong></td><td></td></tr>
+    </table>
+  </div>
+</div>
+{% endblock %}

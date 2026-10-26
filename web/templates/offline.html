@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Database offline{% endblock %}
+{% block content %}
+<h1>The database is offline</h1>
+<p class="lead">The site could not reach its MySQL database. The free cloud database switches itself off after a period
+  without visitors and has to be switched on again by the owner. Please try again later.</p>
+<div class="card">
+  <h2>See the project without the live database</h2>
+  <ul>
+    <li><a href="{{ github }}">Repository and README</a>: the ER diagram, tables and setup instructions</li>
+    <li><a href="{{ github }}/blob/main/docs/QUERY_RESULTS.md">Query results</a>: all 32 queries with their real output</li>
+    <li><a href="{{ github }}/blob/main/database/pulse_crm.sql">database/pulse_crm.sql</a>: the complete build script</li>
+  </ul>
+</div>
+{% endblock %}

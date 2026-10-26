@@ -14,8 +14,12 @@ desktop.ini
 *.cnf
 *.my.cnf
 
-# Local Docker settings (port, password)
+# Local Docker and web settings (ports, passwords, certificates)
 .env
+.env.*
+*.pem
+.vercel/
+__pycache__/
 
 # Local database dumps and logs (keep only the build script in database/)
 backups/

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge %}
+{% block title %}Accounts{% endblock %}
+{% block content %}
+<h1>Account 360</h1>
+<p class="lead">One row per company from the <code>vw_account_360</code> view, which combines contacts, open deals,
+  won revenue and open support tickets.</p>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="wide">
+      <tr><th>Account</th><th>Industry</th><th>Type</th><th>City</th><th>Owner</th><th class="n">Contacts</th>
+        <th class="n">Open deals</th><th class="n">Open pipeline</th><th class="n">Won revenue</th><th class="n">Open tickets</th></tr>
+      {% for r in rows %}
+        <tr><td>{{ r.account_name }}</td><td>{{ r.industry_name or '–' }}</td><td>{{ badge(r.account_type) }}</td>
+          <td>{{ r.city }}</td><td>{{ r.account_owner }}</td><td class="n">{{ r.contacts }}</td>
+          <td class="n">{{ r.open_opportunities|num }}</td><td class="n">{{ r.open_pipeline_value|pkr }}</td>
+          <td class="n">{{ r.won_revenue|pkr }}</td><td class="n">{{ r.open_tickets }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

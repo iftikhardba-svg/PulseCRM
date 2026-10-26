@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge %}
+{% block title %}Support{% endblock %}
+{% block content %}
+<h1>Customer support</h1>
+<p class="lead">From the <code>vw_ticket_resolution</code> view. Resolution time is the number of hours between opening
+  and resolving a ticket. Customers rate resolved tickets from 1 to 5.</p>
+
+<div class="card" style="margin-bottom: 18px">
+  <h2>By priority</h2>
+  <div class="table-wrap">
+    <table class="wide">
+      <tr><th>Priority</th><th class="n">Tickets</th><th class="n">Still open</th><th class="n">Avg resolution</th>
+        <th class="n">Avg satisfaction</th></tr>
+      {% for r in priorities %}
+        <tr><td>{{ badge(r.priority) }}</td><td class="n">{{ r.tickets }}</td><td class="n">{{ r.open_tickets|num }}</td>
+          <td class="n">{{ r.avg_hours|num(1) }} h</td><td class="n">{{ r.avg_score|num(1) }} / 5</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>All tickets ({{ tickets|length }})</h2>
+  <div class="table-wrap">
+    <table class="wide">
+      <tr><th class="n">#</th><th>Account</th><th>Subject</th><th>Priority</th><th>Status</th><th>Assigned to</th>
+        <th class="n">Opened</th><th class="n">Hours</th><th class="n">Rating</th></tr>
+      {% for r in tickets %}
+        <tr><td class="n">{{ r.ticket_id }}</td><td>{{ r.account_name }}</td><td>{{ r.subject }}</td>
+          <td>{{ badge(r.priority) }}</td><td>{{ badge(r.status) }}</td><td>{{ r.assigned_to }}</td>
+          <td class="n">{{ r.opened_at|day }}</td><td class="n">{{ r.resolution_hours|num(1) }}</td>
+          <td class="n">{{ r.satisfaction_score or '–' }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

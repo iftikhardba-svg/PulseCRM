@@ -1,0 +1,3 @@
+{% macro badge(text) -%}
+  <span class="badge b-{{ text|lower|replace(' ', '-') }}">{{ text }}</span>
+{%- endmacro %}

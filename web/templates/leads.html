@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge %}
+{% block title %}Leads{% endblock %}
+{% block content %}
+<h1>Leads and conversion</h1>
+<p class="lead">Leads are scored from 0 to 100, a rule the <code>chk_leads_score</code> CHECK constraint enforces. Only
+  qualified leads can be converted, and <code>sp_convert_lead</code> converts a lead in one transaction, creating an
+  account, a contact and an opportunity.</p>
+
+<div class="grid two">
+  <div class="card">
+    <h2>Leads by status</h2>
+    <div class="bars">
+      {% for r in statuses %}
+        <div class="row">
+          <div>{{ badge(r.status) }}</div>
+          <div class="track"><div class="fill" style="width: {{ r.bar }}%"></div></div>
+          <div class="val">{{ r.leads }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card">
+    <h2>Conversion by source</h2>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Source</th><th class="n">Leads</th><th class="n">Converted</th><th class="n">Rate</th><th class="n">Avg score</th></tr>
+        {% for r in sources %}
+          <tr><td>{{ r.source_name }}</td><td class="n">{{ r.total_leads }}</td><td class="n">{{ r.converted_leads|num }}</td>
+            <td class="n">{{ r.conversion_rate_pct|pct }}</td><td class="n">{{ r.avg_lead_score|num(1) }}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Hottest open leads</h2>
+  <div class="table-wrap">
+    <table class="wide">
+      <tr><th>Lead</th><th>Company</th><th>Source</th><th>Status</th><th>Owner</th><th class="n">Score</th></tr>
+      {% for r in hot %}
+        <tr><td>{{ r.lead_name }}</td><td>{{ r.company_name }}</td><td>{{ r.source_name }}</td>
+          <td>{{ badge(r.status) }}</td><td>{{ r.owner_name }}</td><td class="n">{{ r.lead_score }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

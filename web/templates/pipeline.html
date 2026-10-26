@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge %}
+{% block title %}Pipeline{% endblock %}
+{% block content %}
+<h1>Sales pipeline</h1>
+<p class="lead">From the <code>vw_sales_pipeline</code> view. Weighted value is the deal amount multiplied by the win
+  probability of its stage. When a deal changes stage, the <code>trg_opportunities_stage_history</code> trigger records it.</p>
+
+<div class="card" style="margin-bottom: 18px">
+  <h2>Open deals ({{ open_deals|length }})</h2>
+  <div class="table-wrap">
+    <table class="wide">
+      <tr><th>Deal</th><th>Account</th><th>Owner</th><th>Stage</th><th class="n">Amount</th>
+        <th class="n">Weighted</th><th class="n">Expected close</th></tr>
+      {% for r in open_deals %}
+        <tr><td>{{ r.opportunity_name }}</td><td>{{ r.account_name }}</td><td>{{ r.owner_name }}</td>
+          <td>{{ r.stage_name }} <span class="muted">{{ r.win_probability|num }}%</span></td>
+          <td class="n">{{ r.amount|pkr }}</td><td class="n">{{ r.weighted_amount|pkr }}</td>
+          <td class="n">{{ r.expected_close_date|day }}</td></tr>
+      {% endfor %}
+      <tr><td colspan="4"><strong>Total</strong></td>
+        <td class="n"><strong>{{ open_deals|sum(attribute='amount')|pkr }}</strong></td>
+        <td class="n"><strong>{{ open_deals|sum(attribute='weighted_amount')|pkr }}</strong></td><td></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Closed deals ({{ closed_deals|length }})</h2>
+  <div class="table-wrap">
+    <table class="wide">
+      <tr><th>Deal</th><th>Account</th><th>Owner</th><th>Result</th><th class="n">Amount</th><th class="n">Closed on</th></tr>
+      {% for r in closed_deals %}
+        <tr><td>{{ r.opportunity_name }}</td><td>{{ r.account_name }}</td><td>{{ r.owner_name }}</td>
+          <td>{{ badge('Won' if r.is_won else 'Lost') }}</td>
+          <td class="n">{{ r.amount|pkr }}</td><td class="n">{{ r.actual_close_date|day }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}
