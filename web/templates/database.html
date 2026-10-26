@@ -7,8 +7,10 @@
   third normal form, 31 foreign keys, 34 CHECK constraints, 14 unique keys, 6 views, 5 stored procedures and 1 trigger.</p>
 
 <div class="note-box">
-  <strong>Read-only by design.</strong> The website connects as a separate MySQL user with <code>SELECT</code>
-  privilege only, and every transaction is <code>READ ONLY</code>. The stored procedures that change data
+  <strong>CRM data is read-only here.</strong> The website connects as a separate MySQL user that can read every table but
+  can change only the sign-in tables in
+  <a href="{{ github }}/blob/main/database/web_access.sql"><code>database/web_access.sql</code></a>, and every CRM page
+  runs in a <code>READ ONLY</code> session. The stored procedures that change CRM data
   (<code>sp_convert_lead</code>, <code>sp_update_opportunity_stage</code>, <code>sp_record_payment</code>) are run from
   MySQL Workbench, not from this site.
 </div>

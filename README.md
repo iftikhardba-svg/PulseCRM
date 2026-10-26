@@ -11,7 +11,7 @@ PulseCRM stores everything a B2B sales and service team needs: leads, accounts, 
 
 > Final project for **Relational Database Management Systems (RDBMS)**, Postgraduate Diploma in Generative AI, NED University of Engineering & Technology, Karachi.
 
-**Live dashboard:** [pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app), a read-only reporting site on the sample data (Vercel + MySQL).
+**Live dashboard:** [pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app), a reporting site on the sample data with sign-in and user management (Vercel + MySQL).
 
 ---
 
@@ -186,7 +186,8 @@ PulseCRM/
 │   ├── pulse_crm.sql          ONE script: schema, constraints, indexes, sample data,
 │   │                          views, trigger and stored procedures (MySQL 8.0)
 │   ├── queries.sql            32 report and demonstration queries
-│   └── web_readonly_user.sql  Read-only account for the web dashboard
+│   ├── web_access.sql         Sign-in accounts, privileges and audit log for the web dashboard
+│   └── web_app_user.sql       MySQL account for the web dashboard (reads all, writes sign-in tables only)
 ├── web/                       Live dashboard: Flask app for Vercel (see web/README.md)
 └── docs/
     ├── PROJECT_REPORT.md      Full university project report
@@ -302,15 +303,28 @@ Every push to this repository runs the [Docker build](.github/workflows/docker.y
 
 ## Live Dashboard
 
-**[pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app)** is a read-only reporting website built on the six views. It has eight pages: Overview, Pipeline, Accounts (Account 360), Sales Team, Leads, Support, Invoices, and a Database page with live row counts and the ER diagram.
+**[pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app)** is a reporting website built on the six views, open to registered users. After signing in, users see the pages their privileges allow: Overview, Pipeline, Accounts (Account 360), Sales Team, Leads, Support, Invoices, and a Database page with live row counts and the ER diagram. Administrators also get a **Users** tab, where they can:
+
+- create accounts, optionally linked to CRM staff with their role's default privileges;
+- grant or remove privileges;
+- reset passwords and unlock accounts;
+- deactivate or delete accounts;
+- see the sign-in and change log.
 
 | Part | Technology |
 |---|---|
 | Website | Python Flask app in [`web/`](web/README.md), hosted on Vercel |
 | Database | MySQL 8 on Aiven (free plan), built with the unchanged [`database/pulse_crm.sql`](database/pulse_crm.sql) |
-| Access | Read-only account `pulse_web` (`SELECT` only, [`database/web_readonly_user.sql`](database/web_readonly_user.sql)); every session is also `READ ONLY` |
+| Sign-in | Accounts, privileges and an audit log in five extra tables ([`database/web_access.sql`](database/web_access.sql)). Passwords are stored as salted scrypt hashes, forms carry CSRF tokens, and five wrong passwords lock an account for 15 minutes |
+| Database access | MySQL account `pulse_web` ([`database/web_app_user.sql`](database/web_app_user.sql)): it can read everything and change only the sign-in tables. CRM pages run in `READ ONLY` sessions |
 
-The [Docker build](.github/workflows/docker.yml) workflow tests the dashboard on every push. It opens every page as `pulse_web` on MySQL 8.0 and 8.4, and checks that the account is refused when it tries to change data.
+The [Docker build](.github/workflows/docker.yml) workflow tests the dashboard on every push, on MySQL 8.0 and 8.4:
+
+- signing in, wrong passwords and account lockout;
+- privileges, including the tabs a limited user can see;
+- creating, unlocking and deleting accounts;
+- the audit log;
+- that `pulse_web` is refused when it tries to change CRM data.
 
 Aiven may switch a free MySQL service off when nobody uses it. When that happens, the site shows a short "database is offline" page until the service is switched back on in the Aiven console. Setup steps are in [web/README.md](web/README.md).
 
@@ -393,8 +407,8 @@ Each test below was run against the database and rejected with the error shown:
 
 ## Future Work
 
-- Role-based database users with `GRANT`, plus a read-only reporting account
-- Data entry screens in the web dashboard (it is read-only today) that call the stored procedures, with user login
+- Role-based MySQL users with `GRANT` for each staff role, beyond the web dashboard's `pulse_web` account
+- Data entry screens in the web dashboard (its CRM pages only read data today) that call the stored procedures
 - Scheduled events to mark invoices as overdue automatically
 - Monthly sales targets per representative, and a dashboard in Power BI
 

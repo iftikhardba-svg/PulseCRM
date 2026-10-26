@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<h1>Users and privileges</h1>
+<p class="lead">Web accounts that can sign in to PulseCRM. Each privilege opens one page; <strong>Manage users</strong>
+  opens this page. Linking an account to a CRM staff member fills in the default privileges of their CRM role.</p>
+
+<div class="card" style="margin-bottom: 18px">
+  <h2>Accounts ({{ accounts|length }})</h2>
+  <div class="table-wrap">
+    <table class="wide">
+      <tr><th>User name</th><th>Name</th><th>CRM staff</th><th>Status</th><th>Privileges</th><th>Last sign-in</th><th></th></tr>
+      {% for a in accounts %}
+        <tr>
+          <td><code>{{ a.username }}</code></td>
+          <td>{{ a.display_name }}</td>
+          <td>{{ a.crm_name or '–' }}{% if a.role_name %} <span class="muted">({{ a.role_name }})</span>{% endif %}</td>
+          <td>
+            {% if not a.is_active %}{{ badge('Inactive') }}{% elif a.locked %}{{ badge('Locked') }}{% else %}{{ badge('Active') }}{% endif %}
+            {% if a.must_change_password %}<span class="hint">temporary password</span>{% endif %}
+          </td>
+          <td>{{ a.privilege_names or 'none' }}</td>
+          <td class="n">{{ a.last_login_at|when }}</td>
+          <td><a href="/users/{{ a.account_id }}">Edit</a></td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 18px">
+  <h2>Add an account</h2>
+  <form method="post" id="create">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <label for="user_id">CRM staff member <span class="hint">(optional)</span></label>
+    <select id="user_id" name="user_id">
+      <option value="">Not linked to a CRM user</option>
+      {% for s in staff %}
+        <option value="{{ s.user_id }}" data-name="{{ s.full_name }}" data-defaults="{{ s.defaults }}"
+                {{ 'selected' if form.get('user_id') == s.user_id|string }}>{{ s.full_name }} ({{ s.role_name }})</option>
+      {% endfor %}
+    </select>
+    <label for="display_name">Name</label>
+    <input type="text" id="display_name" name="display_name" value="{{ form.get('display_name', '') }}" required>
+    <label for="username">User name <span class="hint">(3 to 40 lower-case letters, digits, dot, dash or underscore)</span></label>
+    <input type="text" id="username" name="username" value="{{ form.get('username', '') }}" pattern="[a-z0-9._\-]{3,40}"
+           autocapitalize="none" spellcheck="false" required>
+    <label for="password">Temporary password <span class="hint">(at least 10 characters; they must change it when they first sign in)</span></label>
+    <input type="password" id="password" name="password" autocomplete="new-password" minlength="10" required>
+    <label>Privileges</label>
+    <div class="privs">
+      {% for p in privileges %}
+        <label class="check"><input type="checkbox" name="privileges" value="{{ p.privilege_code }}"
+          {{ 'checked' if p.privilege_code in form.getlist('privileges') }}>
+          <span>{{ p.privilege_name }}<br><span class="hint">{{ p.description }}</span></span></label>
+      {% endfor %}
+    </div>
+    <div class="actions"><button class="btn" type="submit">Create account</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Recent activity</h2>
+  <div class="table-wrap">
+    <table class="wide">
+      <tr><th>Time (UTC)</th><th>Account</th><th>Action</th><th>Details</th></tr>
+      {% for e in log %}
+        <tr><td class="n">{{ e.created_at|when }}</td><td>{{ e.username or '–' }}</td>
+          <td>{{ e.action|replace('_', ' ') }}</td><td>{{ e.detail or '' }}</td></tr>
+      {% else %}
+        <tr><td colspan="4" class="muted">No activity yet.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+<script>
+  // Linking a CRM staff member fills in their name and the default privileges of their CRM role.
+  document.getElementById("user_id").addEventListener("change", function () {
+    var option = this.options[this.selectedIndex];
+    if (!option.value) return;
+    var name = document.getElementById("display_name");
+    if (!name.value) name.value = option.dataset.name;
+    var defaults = option.dataset.defaults.split(",");
+    document.querySelectorAll("#create input[name=privileges]").forEach(function (box) {
+      box.checked = defaults.indexOf(box.value) !== -1;
+    });
+  });
+</script>
+{% endblock %}

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}PulseCRM{% endblock %} · PulseCRM</title>
-  <meta name="description" content="PulseCRM: a relational CRM database in MySQL 8.0, with a read-only reporting dashboard.">
+  <meta name="description" content="PulseCRM: a relational CRM database in MySQL 8.0, with a reporting dashboard for signed-in users.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3864'/%3E%3Cpath d='M5 17h6l3-7 4 13 3-6h6' stroke='%2363c5ff' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <style>
     :root {
@@ -65,11 +65,39 @@
     .b-overdue, .b-critical, .b-lost, .b-churned, .b-unqualified, .b-open { background: var(--red-bg); color: var(--red); }
     .b-partially-paid, .b-high, .b-in-progress, .b-prospect, .b-contacted, .b-unpaid { background: var(--amber-bg); color: var(--amber); }
     .b-partner, .b-new, .b-medium { background: #e7eefb; color: var(--blue); }
+    .b-active { background: var(--green-bg); color: var(--green); }
+    .b-locked { background: var(--red-bg); color: var(--red); }
     .note-box { background: #eef4ff; border: 1px solid #cfdcf7; border-radius: 10px; padding: 12px 16px;
                 color: #23406f; font-size: 14px; margin-bottom: 18px; }
     footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
     footer div { max-width: 1200px; margin: 0 auto; padding: 16px; }
     img.erd { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    .who { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 14px; }
+    .who .name { color: #fff; font-weight: 600; }
+    .who a, .who button.linkish { color: #c7d3ea; }
+    .who form { display: inline; margin: 0; }
+    button.linkish { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+    button.linkish:hover { text-decoration: underline; color: #fff; }
+    .flash { border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 14px; border: 1px solid; }
+    .flash.ok { background: var(--green-bg); color: var(--green); border-color: #b9e3cf; }
+    .flash.error { background: var(--red-bg); color: var(--red); border-color: #f5c2bd; }
+    .flash.info { background: #eef4ff; color: #23406f; border-color: #cfdcf7; }
+    label { display: block; font-weight: 600; font-size: 14px; margin: 12px 0 4px; }
+    label.check { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; margin: 6px 0; }
+    label.check input { margin-top: 3px; }
+    .hint { color: var(--muted); font-size: 13px; font-weight: 400; }
+    input[type=text], input[type=password], select {
+      width: 100%; max-width: 420px; padding: 8px 10px; border: 1px solid #c5ccd8; border-radius: 8px;
+      font: inherit; background: #fff; color: var(--ink); }
+    input:focus, select:focus { outline: 2px solid #9cc0f5; border-color: var(--accent); }
+    .btn { display: inline-block; background: var(--navy); color: #fff; border: 0; border-radius: 8px;
+           padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+    .btn:hover { background: var(--blue); text-decoration: none; }
+    .btn.danger { background: var(--red); }
+    .btn.secondary { background: var(--grey-bg); color: var(--ink); }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
+    .privs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 16px; }
+    .login-card { max-width: 400px; margin: 30px auto; }
     @media (max-width: 760px) {
       .table-wrap table.wide { min-width: 720px; }
     }
@@ -84,8 +112,18 @@
 <header>
   <div class="bar-top">
     <a class="brand" href="/">Pulse<span>CRM</span></a>
-    <span class="tagline">Relational CRM database in MySQL 8.0 · read-only dashboard</span>
-    <a class="gh" href="{{ github }}">Source on GitHub</a>
+    <span class="tagline">Relational CRM database in MySQL 8.0</span>
+    <div class="who">
+      {% if user %}
+        <span class="name">{{ user.display_name }}</span>
+        <a href="/account">My account</a>
+        <form method="post" action="/logout">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <button class="linkish" type="submit">Sign out</button>
+        </form>
+      {% endif %}
+      <a class="gh" href="{{ github }}">Source on GitHub</a>
+    </div>
   </div>
   <nav>
     {% for key, label in nav %}
@@ -94,13 +132,16 @@
   </nav>
 </header>
 <main>
+  {% for category, message in get_flashed_messages(with_categories=true) %}
+    <div class="flash {{ category }}">{{ message }}</div>
+  {% endfor %}
   {% block content %}{% endblock %}
 </main>
 <footer>
   <div>
     Final project for <strong>Relational Database Management Systems (RDBMS)</strong>, Postgraduate Diploma in Generative AI,
     NED University of Engineering &amp; Technology, Karachi. By Iftikhar Ahmed (311130); instructor Sir Sajid Majeed.
-    All companies, people and figures are fictional. The dashboard only reads data.
+    All companies, people and figures are fictional. The CRM pages only read data.
   </div>
 </footer>
 </body>

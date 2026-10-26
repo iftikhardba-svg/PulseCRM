@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h1>{{ title }}</h1>
+<p class="lead">{{ text }}</p>
+<p><a href="{{ '/account' if user else '/login' }}">{{ 'Go to my account' if user else 'Go to the sign-in page' }}</a></p>
+{% endblock %}
