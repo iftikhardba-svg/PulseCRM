@@ -1,27 +1,21 @@
-"""PulseCRM web dashboard: a read-only Flask app on top of the pulse_crm database.
+"""PulseCRM web dashboard: a read-only Flask app on top of the pulse_crm MySQL database.
 
-It runs on MySQL (database/pulse_crm.sql) or on PostgreSQL such as Supabase
-(database/pulse_crm_postgres.sql); the scheme of DATABASE_URL decides which. Every
-page reads the reporting views and tables with SELECT statements written in SQL that
-both systems accept. The database account used by the app has SELECT privileges and
-nothing else, and every transaction is also READ ONLY, so the dashboard cannot change data.
+Every page reads the reporting views and tables of database/pulse_crm.sql with SELECT
+statements only. The database account used by the app has SELECT privileges and nothing
+else, and each session is also set to READ ONLY, so the dashboard cannot change data.
 
 Environment variables:
   DATABASE_URL      mysql://user:password@host:port/pulse_crm
-                    or postgresql://user:password@host:port/postgres?sslmode=require
   DATABASE_CA_CERT  PEM text of the server's CA certificate (turns on verified TLS)
 """
 import os
 import ssl
-import tempfile
 from datetime import date, datetime
 from decimal import Decimal
 from urllib.parse import parse_qs, unquote, urlparse
 
-import psycopg
 import pymysql
 from flask import Flask, jsonify, render_template
-from psycopg.rows import dict_row
 
 app = Flask(__name__)
 
@@ -53,10 +47,6 @@ def database_url():
     return os.environ.get("DATABASE_URL", "").strip()
 
 
-def engine():
-    return "PostgreSQL" if database_url().startswith(("postgres://", "postgresql://")) else "MySQL"
-
-
 def ca_cert():
     return os.environ.get("DATABASE_CA_CERT", "").strip().replace("\\n", "\n")
 
@@ -64,29 +54,6 @@ def ca_cert():
 def connect():
     if not database_url():
         raise DatabaseUnavailable("DATABASE_URL is not set")
-    return connect_postgres() if engine() == "PostgreSQL" else connect_mysql()
-
-
-def connect_postgres():
-    options = {}
-    if ca_cert():
-        path = os.path.join(tempfile.gettempdir(), "pulsecrm-ca.pem")
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(ca_cert())
-        options.update(sslmode="verify-full", sslrootcert=path)
-    try:
-        # prepare_threshold=None: no server-side prepared statements, as connection poolers require
-        conn = psycopg.connect(database_url(), row_factory=dict_row, connect_timeout=10,
-                               prepare_threshold=None, **options)
-    except psycopg.OperationalError as error:
-        raise DatabaseUnavailable(str(error)) from error
-    with conn.cursor() as cur:
-        cur.execute("SET TRANSACTION READ ONLY")
-        cur.execute("SET LOCAL search_path TO pulse_crm")
-    return conn
-
-
-def connect_mysql():
     url = urlparse(database_url())
     if ca_cert():
         tls = ssl.create_default_context(cadata=ca_cert())
@@ -121,17 +88,13 @@ def fetch(**queries):
 
 
 @app.errorhandler(pymysql.err.OperationalError)
-@app.errorhandler(psycopg.OperationalError)
 @app.errorhandler(DatabaseUnavailable)
 def database_unavailable(error):
     app.logger.error("Database error: %s", error)
     return render_template("offline.html", page="offline"), 503
 
 
-# SQL that differs between the two systems
-VERSION_SQL = {"MySQL": "SELECT VERSION() AS version",
-               "PostgreSQL": "SELECT current_setting('server_version') AS version"}
-SCHEMA_SQL = {"MySQL": "DATABASE()", "PostgreSQL": "current_schema()"}
+# sort orders and the open-ticket test used by several queries
 PRIORITY_ORDER = "CASE priority WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END"
 LEAD_STATUS_ORDER = ("CASE status WHEN 'New' THEN 1 WHEN 'Contacted' THEN 2 WHEN 'Qualified' THEN 3 "
                      "WHEN 'Unqualified' THEN 4 ELSE 5 END")
@@ -324,18 +287,16 @@ def invoices():
 @app.route("/database")
 def database():
     counts = " UNION ALL ".join(f"SELECT '{t}' AS table_name, COUNT(*) AS row_count FROM {t}" for t in TABLES)
-    data = fetch(tables=counts, version=VERSION_SQL[engine()])
+    data = fetch(tables=counts, version="SELECT VERSION() AS version")
     total = sum(r["row_count"] for r in data["tables"])
     return render_template("database.html", page="database", tables=data["tables"], total=total,
-                           engine=engine(), version=data["version"][0]["version"], erd=ERD_IMAGE)
+                           version=data["version"][0]["version"], erd=ERD_IMAGE)
 
 
 @app.route("/health")
 def health():
-    data = fetch(n=f"SELECT {SCHEMA_SQL[engine()]} AS db, COUNT(*) AS accounts FROM accounts",
-                 version=VERSION_SQL[engine()])
-    return jsonify(status="ok", engine=engine(), version=data["version"][0]["version"],
-                   database=data["n"][0]["db"], accounts=data["n"][0]["accounts"])
+    row = fetch(n="SELECT DATABASE() AS db, VERSION() AS version, COUNT(*) AS accounts FROM accounts")["n"][0]
+    return jsonify(status="ok", database=row["db"], mysql=row["version"], accounts=row["accounts"])
 
 
 if __name__ == "__main__":

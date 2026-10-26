@@ -3,9 +3,7 @@
 **A relational database for Customer Relationship Management, built in MySQL 8.0.**
 
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)
-[![Docker build](https://github.com/iftikhardba-svg/PulseCRM/actions/workflows/docker.yml/badge.svg)](https://github.com/iftikhardba-svg/PulseCRM/actions/workflows/docker.yml)
-[![PostgreSQL port](https://github.com/iftikhardba-svg/PulseCRM/actions/workflows/postgres.yml/badge.svg)](https://github.com/iftikhardba-svg/PulseCRM/actions/workflows/postgres.yml)
-![SQL](https://img.shields.io/badge/Language-SQL-orange)
+[![Docker build](https://github.com/iftikhardba-svg/PulseCRM/actions/workflows/docker.yml/badge.svg)](https://github.com/iftikhardba-svg/PulseCRM/actions/workflows/docker.yml)![SQL](https://img.shields.io/badge/Language-SQL-orange)
 ![Tables](https://img.shields.io/badge/Tables-18-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
@@ -13,7 +11,7 @@ PulseCRM stores everything a B2B sales and service team needs: leads, accounts, 
 
 > Final project for **Relational Database Management Systems (RDBMS)**, Postgraduate Diploma in Generative AI, NED University of Engineering & Technology, Karachi.
 
-**Live dashboard:** [pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app), a read-only reporting site on the sample data (Vercel + Supabase).
+**Live dashboard:** [pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app), a read-only reporting site on the sample data (Vercel + MySQL).
 
 ---
 
@@ -182,13 +180,11 @@ PulseCRM/
 ├── .gitignore
 ├── docker-compose.yml         Runs MySQL and builds the database with one command
 ├── .github/
-│   ├── workflows/docker.yml   Tests the Docker build on MySQL 8.0 and 8.4
-│   ├── workflows/postgres.yml Checks that the PostgreSQL edition matches MySQL
-│   └── scripts/               The MySQL vs PostgreSQL comparison
+│   ├── workflows/docker.yml   Tests the Docker build and the web dashboard on MySQL 8.0 and 8.4
+│   └── scripts/check_web.py   Web dashboard check used by that workflow
 ├── database/
 │   ├── pulse_crm.sql          ONE script: schema, constraints, indexes, sample data,
 │   │                          views, trigger and stored procedures (MySQL 8.0)
-│   ├── pulse_crm_postgres.sql The same database translated to PostgreSQL (Supabase)
 │   ├── queries.sql            32 report and demonstration queries
 │   └── web_readonly_user.sql  Read-only account for the web dashboard
 ├── web/                       Live dashboard: Flask app for Vercel (see web/README.md)
@@ -311,19 +307,12 @@ Every push to this repository runs the [Docker build](.github/workflows/docker.y
 | Part | Technology |
 |---|---|
 | Website | Python Flask app in [`web/`](web/README.md), hosted on Vercel |
-| Database | Supabase (PostgreSQL), built with [`database/pulse_crm_postgres.sql`](database/pulse_crm_postgres.sql) |
-| Access | Read-only account `pulse_web` (`SELECT` only), and every transaction is `READ ONLY` |
+| Database | MySQL 8 on Aiven (free plan), built with the unchanged [`database/pulse_crm.sql`](database/pulse_crm.sql) |
+| Access | Read-only account `pulse_web` (`SELECT` only, [`database/web_readonly_user.sql`](database/web_readonly_user.sql)); every session is also `READ ONLY` |
 
-Supabase runs PostgreSQL, so `pulse_crm_postgres.sql` translates the MySQL script into PostgreSQL syntax. It has the same tables, constraints, data, views, trigger and procedures. The MySQL script remains the main project file.
+The [Docker build](.github/workflows/docker.yml) workflow tests the dashboard on every push. It opens every page as `pulse_web` on MySQL 8.0 and 8.4, and checks that the account is refused when it tries to change data.
 
-On every push, the [PostgreSQL port](.github/workflows/postgres.yml) workflow builds both databases (MySQL 8.4 against PostgreSQL 15 and 17) and checks that they match:
-
-- every table and view holds identical data;
-- every dashboard page renders the same;
-- the seven integrity tests fail with matching errors;
-- the stored procedures make the same changes.
-
-Supabase pauses free projects after a week without visitors. When that happens, the site shows a short "database is offline" page until the project is restored. Setup steps are in [web/README.md](web/README.md).
+Aiven may switch a free MySQL service off when nobody uses it. When that happens, the site shows a short "database is offline" page until the service is switched back on in the Aiven console. Setup steps are in [web/README.md](web/README.md).
 
 ---
 

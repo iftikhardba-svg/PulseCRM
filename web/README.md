@@ -1,6 +1,6 @@
 # PulseCRM Web Dashboard
 
-A read-only reporting website for the `pulse_crm` database, written in Python with Flask. It is hosted on Vercel, and its database runs on Supabase (PostgreSQL). Every page runs `SELECT` queries against the reporting views:
+A read-only reporting website for the `pulse_crm` database, written in Python with Flask and hosted on Vercel. Every page runs `SELECT` queries against the reporting views in `database/pulse_crm.sql`:
 
 | Page | Source |
 |---|---|
@@ -13,34 +13,18 @@ A read-only reporting website for the `pulse_crm` database, written in Python wi
 | Invoices | `vw_invoice_balance` |
 | Database | Live row count of all 18 tables, ER diagram, integrity rules |
 
-`/health` returns the database system, version, schema and account count as JSON.
-
-## MySQL or PostgreSQL
-
-The same app runs on either system, and the scheme of `DATABASE_URL` decides which:
-
-| Database | Build script | Used for |
-|---|---|---|
-| MySQL 8.0+ | [database/pulse_crm.sql](../database/pulse_crm.sql) | The course project, MySQL Workbench, Docker |
-| PostgreSQL 15+ | [database/pulse_crm_postgres.sql](../database/pulse_crm_postgres.sql) | The live site on Supabase |
-
-The PostgreSQL script is a translation of the MySQL one. On every push, the [PostgreSQL port](../.github/workflows/postgres.yml) workflow builds both and checks that they behave the same. It compares:
-
-- every table and view;
-- every dashboard page;
-- the seven integrity tests;
-- the stored procedures.
+`/health` returns the database name, MySQL version and account count as JSON.
 
 ## Read-only by design
 
-The site connects as `pulse_web`, an account with `SELECT` privilege only ([database/web_readonly_user.sql](../database/web_readonly_user.sql)). Every transaction is also `READ ONLY`, so nothing on the website can change data.
+The site connects as `pulse_web`, a MySQL account with `SELECT` privilege only ([database/web_readonly_user.sql](../database/web_readonly_user.sql)). Every session is also set to `READ ONLY`, so nothing on the website can change data.
 
 ## Settings
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | `postgresql://pulse_web.<project-ref>:<password>@<region>.pooler.supabase.com:6543/postgres?sslmode=require`, or `mysql://pulse_web:<password>@<host>:<port>/pulse_crm` |
-| `DATABASE_CA_CERT` | Optional. The server's CA certificate (PEM text), to verify the server as well as encrypt the connection. |
+| `DATABASE_URL` | `mysql://pulse_web:<password>@<host>:<port>/pulse_crm` |
+| `DATABASE_CA_CERT` | The server's CA certificate (PEM text). Turns on verified TLS. |
 
 ## Run locally
 
@@ -48,27 +32,21 @@ The site connects as `pulse_web`, an account with `SELECT` privilege only ([data
 pip install -r web/requirements.txt
 ```
 
-Set `DATABASE_URL` to any database built with one of the scripts. For example, with the Docker setup from the main README, use `mysql://root:pulsecrm@127.0.0.1:3307/pulse_crm`. Then run:
+Set `DATABASE_URL` to any MySQL 8 server that has `pulse_crm` (for example the Docker setup in the main README: `mysql://root:pulsecrm@127.0.0.1:3307/pulse_crm`), then:
 
 ```bash
 flask --app web/app.py run
 ```
 
-## Deploy (Vercel + Supabase)
+## Deploy
 
-1. **Database:** create a free project at [supabase.com](https://supabase.com).
-   - In the dashboard, open **Connect**, copy the **Session pooler** connection string and fill in your database password.
-   - Save it in `web/.env`, which git ignores, as `SUPABASE_DB_URL=...`.
-   - Then run:
+1. **Database:** create a free MySQL 8 service (this project uses [Aiven](https://aiven.io/mysql)). Put its admin URI in `web/.env` as `AIVEN_ADMIN_URL=...` and its CA certificate in `web/ca.pem`. Both are git-ignored. Then run:
 
    ```bash
-   python web/setup_supabase.py
+   python web/setup_cloud_db.py
    ```
 
-   The script builds the `pulse_crm` schema and creates `pulse_web`. It then checks that `pulse_web` can read but not write, and writes `DATABASE_URL` to `web/.env.vercel`, which git also ignores.
-2. **Website:**
-   - In Vercel, import this GitHub repository and set **Root Directory** to `web`.
-   - Add `DATABASE_URL` as an environment variable, then redeploy.
-   - Vercel detects Flask on its own, and every push to `main` redeploys the site.
+   It builds `pulse_crm` with the unchanged build script, creates `pulse_web` and checks that the account can read but not write. It also writes the two settings to `web/.env.vercel`, which is git-ignored.
+2. **Website:** in Vercel, import this GitHub repository, set **Root Directory** to `web` and add the two settings as environment variables. Vercel detects Flask on its own, and every push to `main` redeploys the site.
 
-Supabase pauses free projects after a week without activity. When that happens, the site shows a "database is offline" page with links to the repository, until you restore the project in the Supabase dashboard.
+Aiven powers off a free MySQL service that goes unused. When that happens, the site shows a "database is offline" page with links to the repository, until you switch the service back on in the Aiven console.
