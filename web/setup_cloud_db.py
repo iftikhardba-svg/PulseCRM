@@ -78,8 +78,9 @@ def main():
     web_password = secrets.token_urlsafe(24) + "aA1-"
     with pymysql.connect(host=host, port=port, user=admin, password=password, ssl={"ca": CA}) as conn:
         with conn.cursor() as cur:
-            cur.execute(f"CREATE USER IF NOT EXISTS '{WEB_USER}'@'%' IDENTIFIED BY %s", (web_password,))
-            cur.execute(f"ALTER USER '{WEB_USER}'@'%' IDENTIFIED BY %s", (web_password,))
+            # '%%' is the any-host wildcard '%', escaped because these queries take a %s parameter
+            cur.execute(f"CREATE USER IF NOT EXISTS '{WEB_USER}'@'%%' IDENTIFIED BY %s", (web_password,))
+            cur.execute(f"ALTER USER '{WEB_USER}'@'%%' IDENTIFIED BY %s", (web_password,))
             cur.execute(f"GRANT SELECT ON pulse_crm.* TO '{WEB_USER}'@'%'")
             cur.execute(f"SHOW GRANTS FOR '{WEB_USER}'@'%'")
             grants = [row[0] for row in cur.fetchall()]
