@@ -29,11 +29,13 @@ def check(ok, message):
         failures.append(message)
 
 
-def connect(url):
+def connect(url, plain=False):
+    """plain=True forces an unencrypted connection; PyMySQL otherwise uses TLS whenever the server offers it."""
     u = urlparse(url)
-    tls = {"check_hostname": False} if "ssl-mode=REQUIRED" in u.query.upper() else None   # encrypted, unverified
+    tls = {"check_hostname": False} if "SSL-MODE=REQUIRED" in u.query.upper() else None   # encrypted, unverified
     return pymysql.connect(host=u.hostname, port=u.port or 3306, user=unquote(u.username),
-                           password=unquote(u.password or ""), database=u.path.lstrip("/"), autocommit=True, ssl=tls)
+                           password=unquote(u.password or ""), database=u.path.lstrip("/"), autocommit=True,
+                           ssl=None if plain else tls, ssl_disabled=plain)
 
 
 def token(client, path="/login"):
@@ -267,7 +269,7 @@ def main():
     if not os.environ.get("WEB_DB_URL"):
         print("== MySQL privileges of pulse_web")
         try:
-            connect(web_url.split("?")[0]).close()
+            connect(web_url, plain=True).close()
             check(False, "pulse_web connected without TLS")
         except pymysql.MySQLError as error:
             check(error.args[0] == 1045, f"pulse_web is refused without TLS ({error.args[0]})")

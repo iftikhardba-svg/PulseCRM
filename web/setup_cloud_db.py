@@ -197,7 +197,8 @@ def main():
     web_login = {"host": u.hostname, "port": u.port, "user": unquote(u.username), "password": unquote(u.password),
                  "database": "pulse_crm"}
     try:
-        pymysql.connect(**web_login).close()
+        # ssl_disabled forces plain text; without it PyMySQL uses TLS whenever the server offers it
+        pymysql.connect(**web_login, ssl_disabled=True).close()
         sys.exit(f"ERROR: {WEB_USER} could connect without TLS. Check REQUIRE SSL in database/web_app_user.sql.")
     except pymysql.err.OperationalError as error:
         plain_refused = error.args[0]
