@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<p><a href="{{ back }}">← Back</a></p>
+<h1>{{ title }}</h1>
+<p class="lead">{{ text }}</p>
+
+<div class="grid two">
+  <div class="card">
+    <h2>Record</h2>
+    <table>
+      {% for label, value in summary %}<tr><th>{{ label }}</th><td>{{ value }}</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div class="card">
+    <form method="post">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      {% for f in fields %}
+        <label for="a_{{ f.name }}">{{ f.label }}{% if f.required %} <span class="req">*</span>{% endif %}
+          {% if f.help %}<span class="hint">{{ f.help }}</span>{% endif %}</label>
+        {% if f.type == 'select' %}
+          <select id="a_{{ f.name }}" name="{{ f.name }}" {{ 'required' if f.required }}>
+            {% for option in f.options %}<option {{ 'selected' if option == f.value }}>{{ option }}</option>{% endfor %}
+          </select>
+        {% else %}
+          <input type="{{ f.type }}" id="a_{{ f.name }}" name="{{ f.name }}" value="{{ f.value }}"
+                 {% if f.step %}step="{{ f.step }}"{% endif %} {{ 'required' if f.required }}>
+        {% endif %}
+      {% endfor %}
+      <div class="actions"><button class="btn" type="submit">{{ button }}</button>
+        <a class="btn secondary" href="{{ back }}">Cancel</a></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

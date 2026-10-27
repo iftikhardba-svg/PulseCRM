@@ -1,0 +1,10 @@
+{% set items = segments.get(page, []) %}
+{% if items %}
+  {% set rights = [] %}
+  {% for action in ('add', 'edit', 'delete') %}{% if can(action, page) %}{% set _ = rights.append(action) %}{% endif %}{% endfor %}
+  <div class="manage">
+    <span class="manage-label">Records:</span>
+    {% for t, label in items %}<a class="chip {{ 'on' if t == table }}" href="/data/{{ t }}">{{ label }}</a>{% endfor %}
+    <span class="hint">You can {{ (['view'] + rights)|join(', ') }} here.</span>
+  </div>
+{% endif %}

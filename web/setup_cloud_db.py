@@ -5,12 +5,14 @@
                                               add or update only the sign-in tables
 
 1. Builds pulse_crm by running database/pulse_crm.sql unchanged (skipped with --keep-data).
-2. Adds the sign-in tables from database/web_access.sql.
+2. Adds the sign-in tables from database/web_access.sql. On an existing database it also
+   updates the allowed audit actions and gives new privileges to the active administrators.
 3. Creates pulse_web with a random password (kept with --keep-data) and the grants in
-   database/web_app_user.sql: SELECT on everything, writes only on the sign-in tables.
+   database/web_app_user.sql: SELECT on everything, INSERT/UPDATE/DELETE on the CRM tables
+   (not the stage history), EXECUTE on three procedures, and writes on the sign-in tables.
 4. Creates the first administrator, "admin", if no active account can manage users. Its
    temporary password goes to web/.env.admin (git-ignored); it must be changed at first sign-in.
-5. Checks that pulse_web can read the CRM data but not change it.
+5. Checks that pulse_web cannot change the stage history or create tables.
 6. Writes DATABASE_URL, DATABASE_CA_CERT and SECRET_KEY for Vercel to web/.env.vercel (git-ignored).
 
 Before running, put the administrator connection in web/.env:
@@ -97,9 +99,42 @@ def main():
         run_sql_file(server, "pulse_crm.sql")
         print("1. pulse_crm built from database/pulse_crm.sql")
 
-    # 2. sign-in tables
+    # 2. sign-in tables; on an existing database also bring older versions up to date
+    def admin_connection():
+        return pymysql.connect(host=server[0], port=server[1], user=server[2], password=server[3], ssl=ssl,
+                               database="pulse_crm", autocommit=True)
+
+    with admin_connection() as conn, conn.cursor() as cur:
+        cur.execute("""SELECT COUNT(*) FROM information_schema.tables
+                       WHERE table_schema = 'pulse_crm' AND table_name = 'web_privileges'""")
+        existing = set()
+        if cur.fetchone()[0]:
+            cur.execute("SELECT privilege_code FROM web_privileges")
+            existing = {row[0] for row in cur.fetchall()}
     run_sql_file(server, "web_access.sql", "pulse_crm")
-    print("2. sign-in tables added from database/web_access.sql")
+    access_sql = open(os.path.join(ROOT, "database", "web_access.sql"), encoding="utf-8").read()
+    audit_rule = re.search(r"CONSTRAINT chk_web_audit_action CHECK \((action IN \([^)]*\))\)", access_sql).group(1)
+    with admin_connection() as conn, conn.cursor() as cur:
+        cur.execute("""SELECT check_clause FROM information_schema.check_constraints
+                       WHERE constraint_schema = 'pulse_crm' AND constraint_name = 'chk_web_audit_action'""")
+        clause = cur.fetchone()[0]
+        if "procedure_called" not in clause:
+            cur.execute(f"ALTER TABLE web_audit_log DROP CHECK chk_web_audit_action, "
+                        f"ADD CONSTRAINT chk_web_audit_action CHECK ({audit_rule})")
+            print("   web_audit_log: allowed actions updated")
+        cur.execute("SELECT privilege_code FROM web_privileges")
+        added = sorted({row[0] for row in cur.fetchall()} - existing) if existing else []
+        if added:
+            # administrators of an existing database receive the privileges that did not exist before
+            cur.execute(f"""INSERT IGNORE INTO web_account_privileges (account_id, privilege_code)
+                            SELECT a.account_id, p.privilege_code
+                            FROM web_accounts a
+                            JOIN web_account_privileges ap ON ap.account_id = a.account_id
+                                                         AND ap.privilege_code = 'manage_users'
+                            JOIN web_privileges p ON p.privilege_code IN ({', '.join(['%s'] * len(added))})
+                            WHERE a.is_active = TRUE""", added)
+            print(f"   {len(added)} new privileges, granted to every active administrator ({cur.rowcount} grants)")
+    print("2. sign-in tables added or updated from database/web_access.sql")
 
     # 3. the web application's MySQL account
     grants_sql = open(os.path.join(ROOT, "database", "web_app_user.sql"), encoding="utf-8").read()
@@ -146,18 +181,22 @@ def main():
                 f.write(f"ADMIN_USERNAME={FIRST_ADMIN}\nADMIN_TEMPORARY_PASSWORD={temporary}\n")
             print(f"4. administrator '{FIRST_ADMIN}' created; temporary password in {admin_file} (git-ignored)")
 
-    # 5. the web account can read CRM data but not change it
+    # 5. the web account reads the data, but cannot touch the audit trail or the schema
     u = urlparse(database_url)
     with pymysql.connect(host=u.hostname, port=u.port, user=unquote(u.username), password=unquote(u.password),
                          database="pulse_crm", ssl=ssl) as conn, conn.cursor() as cur:
         cur.execute("SELECT COUNT(*) FROM vw_account_360")
         readable = cur.fetchone()[0]
-        try:
-            cur.execute("UPDATE leads SET lead_score = lead_score WHERE lead_id = 301")
-            sys.exit(f"ERROR: {WEB_USER} was allowed to UPDATE leads. Check its grants.")
-        except pymysql.err.MySQLError as error:
-            print(f"5. {WEB_USER} reads vw_account_360 ({readable} rows) and cannot UPDATE leads "
-                  f"(MySQL error {error.args[0]})")
+        refused = []
+        for statement in ("DELETE FROM opportunity_stage_history WHERE history_id = -1",
+                          "CREATE TABLE pulse_web_probe (id INT PRIMARY KEY)"):
+            try:
+                cur.execute(statement)
+                sys.exit(f"ERROR: {WEB_USER} was allowed to run: {statement}. Check its grants.")
+            except pymysql.err.MySQLError as error:
+                refused.append(str(error.args[0]))
+        print(f"5. {WEB_USER} reads vw_account_360 ({readable} rows) and is refused on the stage history and on "
+              f"CREATE TABLE (MySQL errors {', '.join(refused)})")
 
     # 6. settings for Vercel
     ca_text = ""

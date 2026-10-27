@@ -62,15 +62,17 @@ def main():
         cur.execute("SHOW GRANTS FOR 'pulse_web'@'%'")
         grants = " | ".join(row[0] for row in cur.fetchall())
         check("GRANT SELECT ON `pulse_crm`.*" in grants and "`web_accounts`" in grants
-              and "UPDATE ON `pulse_crm`.`leads`" not in grants, f"pulse_web grants: {grants}")
+              and "INSERT, UPDATE, DELETE ON `pulse_crm`.`accounts`" in grants
+              and "EXECUTE ON PROCEDURE `pulse_crm`.`sp_convert_lead`" in grants
+              and "`opportunity_stage_history`" not in grants, f"pulse_web grants: {grants}")
         u = urlparse(admin_url)
         web_url = f"mysql://pulse_web:{password}@{u.hostname}:{u.port}{u.path}"
 
     # a known administrator for the test
     cur.execute("DELETE FROM web_accounts WHERE username LIKE 'ci.%'")
     admin_password = secrets.token_urlsafe(16)
-    cur.execute("""INSERT INTO web_accounts (username, display_name, password_hash, must_change_password)
-                   VALUES ('ci.admin', 'CI Administrator', %s, FALSE)""", (generate_password_hash(admin_password),))
+    cur.execute("""INSERT INTO web_accounts (username, display_name, user_id, password_hash, must_change_password)
+                   VALUES ('ci.admin', 'CI Administrator', 1, %s, FALSE)""", (generate_password_hash(admin_password),))
     admin_id = cur.lastrowid
     cur.execute("""INSERT INTO web_account_privileges (account_id, privilege_code)
                    SELECT %s, privilege_code FROM web_privileges""", (admin_id,))
@@ -102,9 +104,71 @@ def main():
         check(r.status_code == 200, f"{path}: {r.status_code} {title.group(1) if title else ''}")
     check(">Users</a>" in admin.get("/").get_data(as_text=True), "administrator sees the Users tab")
 
+    print("== Records: add, edit, delete")
+    for path in ["/data/accounts", "/data/accounts/new", "/data/leads/new", "/data/opportunity_products",
+                 "/data/opportunities/401/edit", "/data/opportunity_stage_history"]:
+        check(admin.get(path).status_code == 200, f"{path}: 200")
+    account = {"account_name": "CI Test Traders", "account_type": "Prospect", "city": "Karachi",
+               "country": "Pakistan", "owner_user_id": "3", "employee_count": "40"}
+    r = post(admin, "/data/accounts/new", account)
+    cur.execute("SELECT account_id FROM accounts WHERE account_name = 'CI Test Traders'")
+    found = cur.fetchone()
+    check(r.status_code == 302 and found is not None, f"account added: {r.status_code}")
+    account_id = found[0] if found else 0
+    html = post(admin, "/data/accounts/new", dict(account, account_name="CI Bad", employee_count="-5"),
+                follow=True).get_data(as_text=True)
+    check("3819" in html and "chk_accounts_employees" in html, "CHECK violation shown (3819 chk_accounts_employees)")
+    html = post(admin, "/data/accounts/new", dict(account, account_name="Indus Weave Textiles"),
+                follow=True).get_data(as_text=True)
+    check("1062" in html, "duplicate account name refused (1062)")
+    html = post(admin, "/data/accounts/new", {"account_type": "Prospect"}, follow=True).get_data(as_text=True)
+    check("Account name is required." in html, "missing required value refused before MySQL")
+    r = post(admin, f"/data/accounts/{account_id}/edit", dict(account, city="Lahore"))
+    cur.execute("SELECT city FROM accounts WHERE account_id = %s", (account_id,))
+    check(r.status_code == 302 and cur.fetchone()[0] == "Lahore", "account edited")
+    html = post(admin, "/data/accounts/101/delete", {}, follow=True).get_data(as_text=True)
+    cur.execute("SELECT COUNT(*) FROM accounts WHERE account_id = 101")
+    check("1451" in html and cur.fetchone()[0] == 1, "deleting a referenced account is refused (1451)")
+    post(admin, f"/data/accounts/{account_id}/delete", {})
+    cur.execute("SELECT COUNT(*) FROM accounts WHERE account_id = %s", (account_id,))
+    check(cur.fetchone()[0] == 0, "account deleted")
+    r = post(admin, "/data/campaign_leads/new", {"campaign_id": "701", "lead_id": "322", "added_on": "2026-10-27",
+                                                 "response": "Sent"})
+    post(admin, "/data/campaign_leads/701,322/edit", {"added_on": "2026-10-27", "response": "Opened"})
+    cur.execute("SELECT response FROM campaign_leads WHERE campaign_id = 701 AND lead_id = 322")
+    check(r.status_code == 302 and cur.fetchone()[0] == "Opened", "two-column key: row added and edited")
+    post(admin, "/data/campaign_leads/701,322/delete", {})
+    cur.execute("SELECT COUNT(*) FROM campaign_leads WHERE campaign_id = 701 AND lead_id = 322")
+    check(cur.fetchone()[0] == 0, "two-column key: row deleted")
+    check(admin.get("/data/opportunity_stage_history/new").status_code == 403, "stage history cannot be added to")
+
+    print("== Stored procedures")
+    html = post(admin, "/leads/322/convert", {"opportunity_name": "No", "amount": "1000", "expected_close": "2027-01-01"},
+                follow=True).get_data(as_text=True)
+    check("Unqualified leads cannot be converted" in html, "sp_convert_lead refuses an unqualified lead (1644)")
+    r = post(admin, "/leads/307/convert", {"opportunity_name": "Gwadar Port ERP", "amount": "2500000",
+                                           "expected_close": "2027-01-31"})
+    cur.execute("SELECT status FROM leads WHERE lead_id = 307")
+    check(r.status_code == 302 and cur.fetchone()[0] == "Converted", "sp_convert_lead converts lead 307")
+    r = post(admin, "/pipeline/410/stage", {"stage_name": "Closed Won", "loss_reason": ""})
+    cur.execute("SELECT invoice_id FROM invoices WHERE opportunity_id = 410")
+    invoice = cur.fetchone()
+    cur.execute("SELECT changed_by FROM opportunity_stage_history WHERE opportunity_id = 410 AND to_stage_id = 5")
+    check(r.status_code == 302 and invoice is not None and cur.fetchone() == (1,),
+          "sp_update_opportunity_stage wins deal 410 and creates its invoice; the trigger records CRM user 1")
+    invoice_id = invoice[0] if invoice else 0
+    html = post(admin, f"/invoices/{invoice_id}/payment", {"amount": "99999999", "payment_method": "Card"},
+                follow=True).get_data(as_text=True)
+    check("cannot exceed the balance due" in html, "sp_record_payment refuses an overpayment")
+    r = post(admin, f"/invoices/{invoice_id}/payment", {"amount": "500000", "payment_method": "Bank Transfer",
+                                                        "reference_no": "BT-CI-0410"})
+    cur.execute("SELECT status FROM invoices WHERE invoice_id = %s", (invoice_id,))
+    check(r.status_code == 302 and cur.fetchone()[0] == "Partially Paid", "sp_record_payment records a part payment")
+
     rep_password = secrets.token_urlsafe(14)
     r = post(admin, "/users", {"username": "ci.rep", "display_name": "CI Rep", "user_id": "4",
-                               "password": rep_password, "privileges": ["view_overview", "view_pipeline"]})
+                               "password": rep_password,
+                               "privileges": ["view_overview", "view_pipeline", "add_pipeline"]})
     check(r.status_code == 302, f"account ci.rep created: {r.status_code}")
     r = post(admin, "/users", {"username": "ci.rep", "display_name": "Again", "password": rep_password}, follow=True)
     check("already taken" in r.get_data(as_text=True), "duplicate user name refused")
@@ -127,6 +191,14 @@ def main():
     check(rep.get("/pipeline").status_code == 200, "ci.rep opens Pipeline (granted)")
     check(rep.get("/invoices").status_code == 403, "ci.rep cannot open Invoices (not granted)")
     check(rep.get("/users").status_code == 403, "ci.rep cannot open Users")
+    html = rep.get("/data/opportunities").get_data(as_text=True)
+    check("Add a record" in html and "/edit" not in html and ">Delete<" not in html,
+          "ci.rep sees Add but no Edit or Delete on deals")
+    check(rep.get("/data/opportunities/new").status_code == 200, "ci.rep opens the add form (add_pipeline)")
+    check(rep.get("/data/opportunities/401/edit").status_code == 403, "ci.rep cannot edit deals")
+    check(post(rep, "/data/opportunities/401/delete", {}).status_code == 403, "ci.rep cannot delete deals")
+    check(post(rep, "/pipeline/411/stage", {"stage_name": "Proposal"}).status_code == 403, "ci.rep cannot change stages")
+    check(rep.get("/data/accounts").status_code == 403, "ci.rep cannot open account records")
     html = rep.get("/").get_data(as_text=True)
     check(">Pipeline</a>" in html and ">Invoices</a>" not in html and ">Users</a>" not in html,
           "ci.rep sees only the granted tabs")
@@ -138,7 +210,7 @@ def main():
     r = sign_in(other, "ci.rep", new_password)
     check("locked" in r.get_data(as_text=True), "five wrong passwords lock the account, even for the right one")
     r = post(admin, f"/users/{rep_id}", {"display_name": "CI Rep", "user_id": "4", "is_active": "on", "unlock": "on",
-                                         "privileges": ["view_overview", "view_pipeline"]})
+                                         "privileges": ["view_overview", "view_pipeline", "add_pipeline"]})
     check(r.status_code == 302, "administrator unlocks ci.rep")
     check(sign_in(other, "ci.rep", new_password).status_code == 302, "ci.rep signs in after the unlock")
 
@@ -153,15 +225,16 @@ def main():
     cur.execute("SELECT DISTINCT action FROM web_audit_log")
     actions = {row[0] for row in cur.fetchall()}
     expected = {"login", "login_failed", "logout", "account_created", "account_updated", "password_changed",
-                "account_deleted"}
+                "account_deleted", "record_added", "record_updated", "record_deleted", "procedure_called"}
     check(expected <= actions, f"audit log records {sorted(actions)}")
 
     if not os.environ.get("WEB_DB_URL"):
         print("== MySQL privileges of pulse_web")
         u = urlparse(web_url)
         with connect(web_url) as conn, conn.cursor() as c:
-            for sql_text in ("UPDATE leads SET lead_score = lead_score WHERE lead_id = 301",
-                             "INSERT INTO web_privileges VALUES ('x', 'x', 'x', 99)"):
+            for sql_text in ("DELETE FROM opportunity_stage_history WHERE history_id = -1",
+                             "INSERT INTO web_privileges VALUES ('x', 'x', 'x', 99)",
+                             "CREATE TABLE web_probe (id INT PRIMARY KEY)"):
                 try:
                     c.execute(sql_text)
                     check(False, f"pulse_web was allowed: {sql_text}")

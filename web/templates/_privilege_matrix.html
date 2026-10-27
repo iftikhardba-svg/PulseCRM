@@ -1,0 +1,21 @@
+<div class="table-wrap">
+  <table class="matrix">
+    <tr><th>Page</th><th>View</th><th>Add</th><th>Edit</th><th>Delete</th></tr>
+    {% for label, cells in matrix %}
+      <tr>
+        <td>{{ label }}</td>
+        {% for action, code in cells %}
+          <td>{% if code %}<input type="checkbox" name="privileges" value="{{ code }}" aria-label="{{ label }}: {{ action }}"
+              {{ 'checked' if code in checked }}>{% endif %}</td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+    <tr>
+      <td>Users</td>
+      <td colspan="4"><label class="check" style="margin: 0"><input type="checkbox" name="privileges" value="manage_users"
+        {{ 'checked' if 'manage_users' in checked }}><span>Manage users: accounts, privileges and passwords</span></label></td>
+    </tr>
+  </table>
+</div>
+<p class="hint" style="margin: 6px 0 0">Add, Edit and Delete apply to every table of that page. Edit on Leads also allows
+  converting leads, Edit on Pipeline moving deals between stages, and Add on Invoices recording payments.</p>

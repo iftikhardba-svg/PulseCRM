@@ -25,9 +25,7 @@
   <div class="card">
     <h2>My privileges</h2>
     {% if user.privileges %}
-      <ul>
-        {% for key, label in nav %}<li>{{ label }}{% if key == 'users' %} (manage users){% endif %}</li>{% endfor %}
-      </ul>
+      <p>{{ privilege_summary(user.privileges) }}</p>
     {% else %}
       <p class="muted">Your account has no privileges yet. Ask an administrator to grant access to the pages you need.</p>
     {% endif %}

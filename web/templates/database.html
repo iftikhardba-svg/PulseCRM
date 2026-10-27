@@ -7,12 +7,13 @@
   third normal form, 31 foreign keys, 34 CHECK constraints, 14 unique keys, 6 views, 5 stored procedures and 1 trigger.</p>
 
 <div class="note-box">
-  <strong>CRM data is read-only here.</strong> The website connects as a separate MySQL user that can read every table but
-  can change only the sign-in tables in
-  <a href="{{ github }}/blob/main/database/web_access.sql"><code>database/web_access.sql</code></a>, and every CRM page
-  runs in a <code>READ ONLY</code> session. The stored procedures that change CRM data
-  (<code>sp_convert_lead</code>, <code>sp_update_opportunity_stage</code>, <code>sp_record_payment</code>) are run from
-  MySQL Workbench, not from this site.
+  <strong>How this site changes data.</strong> It connects as a separate MySQL user,
+  <a href="{{ github }}/blob/main/database/web_app_user.sql"><code>pulse_web</code></a>, granted table by table:
+  <code>SELECT</code> everywhere, <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code> on the 17 CRM tables,
+  <code>EXECUTE</code> on <code>sp_convert_lead</code>, <code>sp_update_opportunity_stage</code> and
+  <code>sp_record_payment</code>, and no rights on the stage history or the schema. Report pages run in
+  <code>READ ONLY</code> sessions. Which pages a person may change is set per account on the Users page, and every
+  change is checked by the constraints below and written to the activity log.
 </div>
 
 <div class="card" style="margin-bottom: 18px">

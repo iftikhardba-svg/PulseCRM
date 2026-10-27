@@ -303,28 +303,52 @@ Every push to this repository runs the [Docker build](.github/workflows/docker.y
 
 ## Live Dashboard
 
-**[pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app)** is a reporting website built on the six views, open to registered users. After signing in, users see the pages their privileges allow: Overview, Pipeline, Accounts (Account 360), Sales Team, Leads, Support, Invoices, and a Database page with live row counts and the ER diagram. Administrators also get a **Users** tab, where they can:
+**[pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app)** is a CRM website on the database, open to registered users. After signing in, users see the pages their privileges allow: Overview, Pipeline, Accounts (Account 360), Sales Team, Leads, Support, Invoices, and a Database page with live row counts and the ER diagram.
 
-- create accounts, optionally linked to CRM staff with their role's default privileges;
-- grant or remove privileges;
+**Records (DML).** Each page lists its tables, and users with the right privileges can **add, edit and delete** rows in all 17 CRM tables:
+
+| Page | Tables |
+|---|---|
+| Pipeline | deals, deal line items, activities, products, pipeline stages |
+| Accounts | accounts, contacts, industries |
+| Sales Team | CRM staff, roles |
+| Leads | leads, campaigns, campaign members, lead sources |
+| Support | tickets |
+| Invoices | invoices, payments |
+
+- **Forms** are generated from MySQL's own metadata (`information_schema`): types, required columns, foreign-key dropdowns and the value lists of `CHECK ... IN` rules.
+- **MySQL enforces every rule.** A change that breaks one shows MySQL's own error, such as 3819 for a CHECK, 1062 for a duplicate or 1451 for a row that others still reference.
+- **Three operations** run through the stored procedures:
+  - **Convert lead** (`sp_convert_lead`);
+  - **Change deal stage** (`sp_update_opportunity_stage`; the trigger records which CRM user moved the deal);
+  - **Record payment** (`sp_record_payment`).
+- **The stage history stays read-only.**
+
+**User management.** Administrators get a **Users** tab, where they can:
+
+- create accounts, optionally linked to CRM staff, which pre-ticks that role's default privileges;
+- grant privileges in a grid: **View, Add, Edit and Delete** for every page, plus Manage users;
 - reset passwords and unlock accounts;
 - deactivate or delete accounts;
-- see the sign-in and change log.
+- read the log of sign-ins, account changes and record changes.
 
 | Part | Technology |
 |---|---|
 | Website | Python Flask app in [`web/`](web/README.md), hosted on Vercel |
 | Database | MySQL 8 on Aiven (free plan), built with the unchanged [`database/pulse_crm.sql`](database/pulse_crm.sql) |
-| Sign-in | Accounts, privileges and an audit log in five extra tables ([`database/web_access.sql`](database/web_access.sql)). Passwords are stored as salted scrypt hashes, forms carry CSRF tokens, and five wrong passwords lock an account for 15 minutes |
-| Database access | MySQL account `pulse_web` ([`database/web_app_user.sql`](database/web_app_user.sql)): it can read everything and change only the sign-in tables. CRM pages run in `READ ONLY` sessions |
+| Sign-in | Accounts, 27 privileges and an audit log in five extra tables ([`database/web_access.sql`](database/web_access.sql)). Passwords are stored as salted scrypt hashes, forms carry CSRF tokens, and five wrong passwords lock an account for 15 minutes |
+| Database access | MySQL account `pulse_web` ([`database/web_app_user.sql`](database/web_app_user.sql)), granted table by table: SELECT everywhere; INSERT, UPDATE and DELETE on the 17 CRM tables; EXECUTE on the three procedures; writes on the sign-in tables. It has no rights on the stage history and no CREATE, ALTER, DROP or GRANT |
 
 The [Docker build](.github/workflows/docker.yml) workflow tests the dashboard on every push, on MySQL 8.0 and 8.4:
 
 - signing in, wrong passwords and account lockout;
-- privileges, including the tabs a limited user can see;
+- adding, editing and deleting records, including a two-column key;
+- MySQL's refusals (3819, 1062, 1451);
+- the three procedures, with their own refusals;
+- privileges on every route, including a user who may add but not edit or delete;
 - creating, unlocking and deleting accounts;
 - the audit log;
-- that `pulse_web` is refused when it tries to change CRM data.
+- the grants of `pulse_web`.
 
 Aiven may switch a free MySQL service off when nobody uses it. When that happens, the site shows a short "database is offline" page until the service is switched back on in the Aiven console. Setup steps are in [web/README.md](web/README.md).
 

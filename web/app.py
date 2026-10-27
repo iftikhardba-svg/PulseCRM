@@ -18,16 +18,16 @@ Environment variables:
 import os
 import re
 import secrets
-import ssl
-from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from functools import wraps
-from urllib.parse import parse_qs, unquote, urlparse
 
 import pymysql
 from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
+
+import crud
+from db import DatabaseUnavailable, audit, fetch, rows, transaction
 
 app = Flask(__name__)
 app.config.update(
@@ -66,86 +66,6 @@ DUMMY_HASH = generate_password_hash("not-a-real-password")   # same work for unk
 
 
 # --------------------------------------------------------------------------- database
-class DatabaseUnavailable(Exception):
-    pass
-
-
-def database_url():
-    return os.environ.get("DATABASE_URL", "").strip()
-
-
-def ca_cert():
-    return os.environ.get("DATABASE_CA_CERT", "").strip().replace("\\n", "\n")
-
-
-def connect(read_only=True):
-    if not database_url():
-        raise DatabaseUnavailable("DATABASE_URL is not set")
-    url = urlparse(database_url())
-    if ca_cert():
-        tls = ssl.create_default_context(cadata=ca_cert())
-    elif parse_qs(url.query).get("ssl-mode", [""])[0].upper() == "REQUIRED":
-        # Encrypted but unverified; set DATABASE_CA_CERT to verify the server
-        tls = ssl.create_default_context()
-        tls.check_hostname = False
-        tls.verify_mode = ssl.CERT_NONE
-    else:
-        tls = None
-    conn = pymysql.connect(host=url.hostname, port=url.port or 3306,
-                           user=unquote(url.username or ""), password=unquote(url.password or ""),
-                           database=url.path.lstrip("/") or "pulse_crm", charset="utf8mb4", ssl=tls,
-                           connect_timeout=10, read_timeout=20, cursorclass=pymysql.cursors.DictCursor)
-    if read_only:
-        with conn.cursor() as cur:
-            cur.execute("SET SESSION TRANSACTION READ ONLY")
-    return conn
-
-
-def fetch(**queries):
-    """Run each named SELECT on one READ ONLY connection and return {name: rows}."""
-    conn = connect()
-    try:
-        with conn.cursor() as cur:
-            result = {}
-            for name, sql in queries.items():
-                cur.execute(sql)
-                result[name] = cur.fetchall()
-            return result
-    finally:
-        conn.close()
-
-
-def rows(sql, args=()):
-    """One parameterised SELECT on a READ ONLY connection."""
-    conn = connect()
-    try:
-        with conn.cursor() as cur:
-            cur.execute(sql, args)
-            return cur.fetchall()
-    finally:
-        conn.close()
-
-
-@contextmanager
-def transaction():
-    """A writable connection for the sign-in tables: commits at the end, rolls back on any error."""
-    conn = connect(read_only=False)
-    try:
-        with conn.cursor() as cur:
-            yield cur
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
-
-
-def audit(cur, account_id, action, detail=None):
-    cur.execute("INSERT INTO web_audit_log (account_id, action, detail) VALUES (%s, %s, %s)",
-                (account_id, action, detail[:255] if detail else None))
-
-
 @app.errorhandler(pymysql.err.OperationalError)
 @app.errorhandler(DatabaseUnavailable)
 def database_unavailable(error):
@@ -223,17 +143,54 @@ def password_problem(password, confirm, username):
     return None
 
 
+def no_access():
+    return render_template("message.html", page=None, title="No access",
+                           text="Your account does not have the privilege for this. "
+                                "Ask an administrator if you need it."), 403
+
+
 def requires(privilege):
     def decorator(view):
         @wraps(view)
         def wrapped(*args, **kwargs):
             if privilege not in g.user["privileges"]:
-                return render_template("message.html", page=None, title="No access",
-                                       text="Your account does not have the privilege to open this page. "
-                                            "Ask an administrator if you need it."), 403
+                return no_access()
             return view(*args, **kwargs)
         return wrapped
     return decorator
+
+
+# privilege codes are <action>_<segment>, for example view_accounts, add_accounts, delete_accounts
+ACTIONS = ("view", "add", "edit", "delete")
+
+
+def can(action, segment):
+    user = g.get("user")
+    return bool(user) and f"{action}_{segment}" in user["privileges"]
+
+
+def privilege_matrix(privileges):
+    """Rows of (segment label, [(action, code or None), ...]) for the privilege grid on the Users pages."""
+    codes = {p["privilege_code"] for p in privileges}
+    return [(label, [(action, f"{action}_{segment}" if f"{action}_{segment}" in codes else None)
+                     for action in ACTIONS])
+            for segment, label, _ in NAV if segment != "users"]
+
+
+def privilege_summary(codes):
+    """'Overview · Pipeline (view, add, edit) · Users' for a set of privilege codes."""
+    parts = []
+    for segment, label, _ in NAV:
+        if segment == "users":
+            if "manage_users" in codes:
+                parts.append("Users")
+            continue
+        granted = [action for action in ACTIONS if f"{action}_{segment}" in codes]
+        if granted == ["view"]:
+            parts.append(label)
+        elif granted:
+            parts.append(f"{label} ({', '.join(granted)})")
+    return " · ".join(parts) or "none"
 
 
 @app.before_request
@@ -414,7 +371,7 @@ def users():
                     for code in sorted(chosen):
                         cur.execute("""INSERT INTO web_account_privileges (account_id, privilege_code, granted_by)
                                        VALUES (%s, %s, %s)""", (new_id, code, me))
-                    audit(cur, me, "account_created", f"{username}: {', '.join(sorted(chosen)) or 'no privileges'}")
+                    audit(cur, me, "account_created", f"{username}: {privilege_summary(chosen)}")
                 flash(f"Account {username} created. Give them the temporary password; they must choose their "
                       "own when they first sign in.", "ok")
                 return redirect(url_for("users"))
@@ -425,22 +382,24 @@ def users():
     accounts = rows("""
         SELECT a.account_id, a.username, a.display_name, a.is_active, a.must_change_password, a.last_login_at,
                a.locked_until > NOW() AS locked, u.full_name AS crm_name, r.role_name,
-               GROUP_CONCAT(p.privilege_name ORDER BY p.sort_order SEPARATOR ', ') AS privilege_names
+               GROUP_CONCAT(ap.privilege_code) AS codes
         FROM web_accounts a
         LEFT JOIN users u                   ON a.user_id = u.user_id
         LEFT JOIN roles r                   ON u.role_id = r.role_id
         LEFT JOIN web_account_privileges ap ON ap.account_id = a.account_id
-        LEFT JOIN web_privileges p          ON p.privilege_code = ap.privilege_code
         GROUP BY a.account_id, a.username, a.display_name, a.is_active, a.must_change_password, a.last_login_at,
                  a.locked_until, u.full_name, r.role_name
         ORDER BY a.username""")
+    for a in accounts:
+        a["privilege_summary"] = privilege_summary(set((a["codes"] or "").split(",")))
     log = rows("""SELECT l.created_at, a.username, l.action, l.detail
                   FROM web_audit_log l
                   LEFT JOIN web_accounts a ON a.account_id = l.account_id
                   ORDER BY l.log_id DESC
                   LIMIT 25""")
-    return render_template("users.html", page="users", accounts=accounts, privileges=privileges,
-                           staff=crm_staff(0), log=log, form=request.form)
+    return render_template("users.html", page="users", accounts=accounts, matrix=privilege_matrix(privileges),
+                           staff=crm_staff(0), log=log, form=request.form,
+                           checked=set(request.form.getlist("privileges")))
 
 
 @app.route("/users/<int:account_id>", methods=["GET", "POST"])
@@ -502,8 +461,8 @@ def user_edit(account_id):
             except pymysql.err.IntegrityError:
                 problem = "That CRM staff member already has an account."
         flash(problem, "error")
-    return render_template("user_edit.html", page="users", target=target, privileges=privileges,
-                           staff=crm_staff(account_id), is_self=is_self)
+    return render_template("user_edit.html", page="users", target=target, matrix=privilege_matrix(privileges),
+                           staff=crm_staff(account_id), is_self=is_self, checked=target["privileges"])
 
 
 @app.route("/users/<int:account_id>/delete", methods=["POST"])
@@ -523,6 +482,263 @@ def user_delete(account_id):
         flash(f"Account {target['username']} deleted.", "ok")
         return redirect(url_for("users"))
     return redirect(url_for("user_edit", account_id=account_id))
+
+
+# --------------------------------------------------------------------------- add, edit and delete CRM records
+def database_refused(error):
+    """MySQL refused the statement (a rule, a key, a procedure). Connection problems re-raise."""
+    code = error.args[0] if error.args else 0
+    if 2000 <= code < 3000:               # client-side codes: the server could not be reached
+        raise error
+    return crud.explain(error)
+
+
+def set_crm_user(cur):
+    """Tell trg_opportunities_stage_history which CRM user makes the change (the linked staff member)."""
+    cur.execute("SET @crm_user_id = %s", (g.user["user_id"],))
+
+
+def data_table(table, action):
+    """(table info, segment) when the user may do action on table; otherwise None."""
+    info = crud.table_info(table)
+    if info is None:
+        abort(404)
+    segment = crud.TABLE_SEGMENT[table]
+    if action != "view" and table in crud.READ_ONLY:
+        return None
+    return (info, segment) if can(action, segment) else None
+
+
+def changed_columns(row, values):
+    return [c for c, v in values.items() if ("" if row[c] is None else str(row[c])) != ("" if v is None else str(v))]
+
+
+# extra buttons on some tables: (label, endpoint, privilege action)
+ROW_ACTIONS = {
+    "leads": [("Convert", "convert_lead", "edit")],
+    "opportunities": [("Change stage", "deal_stage", "edit")],
+    "invoices": [("Record payment", "record_payment", "add")],
+}
+
+
+@app.route("/data/<table>")
+def data_list(table):
+    found = data_table(table, "view")
+    if not found:
+        return no_access()
+    info, segment = found
+    records = crud.list_rows(table)
+    for r in records:
+        r["_key"] = crud.key_of(table, r)
+    return render_template("data_list.html", page=segment, table=table, title=crud.TABLE_TITLE[table], info=info,
+                           records=records, read_only=table in crud.READ_ONLY, row_actions=ROW_ACTIONS.get(table, []))
+
+
+@app.route("/data/<table>/new", methods=["GET", "POST"])
+def data_new(table):
+    found = data_table(table, "add")
+    if not found:
+        return no_access()
+    info, segment = found
+    values = {c["name"]: crud.input_value(c, c["default"]) for c in info["columns"] if not c["db_time"]}
+    if request.method == "POST":
+        data, problems = crud.read_form(table, request.form, adding=True)
+        if not problems:
+            try:
+                with transaction() as cur:
+                    set_crm_user(cur)
+                    new_id = crud.insert(cur, table, data)
+                    key = ",".join(str(data[k]) for k in info["pk"]) if len(info["pk"]) > 1 else (new_id or data.get(info["pk"][0]))
+                    audit(cur, g.user["account_id"], "record_added", f"{table} #{key}")
+                flash(f"{crud.TABLE_TITLE[table]}: record {key} added.", "ok")
+                return redirect(url_for("data_list", table=table))
+            except pymysql.MySQLError as error:
+                problems.append(database_refused(error))
+        for problem in problems:
+            flash(problem, "error")
+        values = request.form
+    return render_template("data_form.html", page=segment, table=table, title=crud.TABLE_TITLE[table], info=info,
+                           fields=crud.form_fields(table, True), adding=True, values=values, row={},
+                           options=crud.options(table))
+
+
+@app.route("/data/<table>/<key>/edit", methods=["GET", "POST"])
+def data_edit(table, key):
+    found = data_table(table, "edit")
+    if not found:
+        return no_access()
+    info, segment = found
+    parts = crud.parse_key(table, key)
+    row = crud.get_row(table, parts) if parts else None
+    if row is None:
+        abort(404)
+    values = {c["name"]: crud.input_value(c, row[c["name"]]) for c in info["columns"]}
+    if request.method == "POST":
+        data, problems = crud.read_form(table, request.form, adding=False)
+        if not problems:
+            try:
+                with transaction() as cur:
+                    set_crm_user(cur)
+                    crud.update(cur, table, data, parts)
+                    audit(cur, g.user["account_id"], "record_updated",
+                          f"{table} #{key}: {', '.join(changed_columns(row, data)) or 'no changes'}")
+                flash(f"{crud.TABLE_TITLE[table]}: record {key} saved.", "ok")
+                return redirect(url_for("data_list", table=table))
+            except pymysql.MySQLError as error:
+                problems.append(database_refused(error))
+        for problem in problems:
+            flash(problem, "error")
+        values = request.form
+    return render_template("data_form.html", page=segment, table=table, title=crud.TABLE_TITLE[table], info=info,
+                           fields=crud.form_fields(table, False), adding=False, values=values, row=row, key=key,
+                           options=crud.options(table))
+
+
+@app.route("/data/<table>/<key>/delete", methods=["POST"])
+def data_delete(table, key):
+    found = data_table(table, "delete")
+    if not found:
+        return no_access()
+    parts = crud.parse_key(table, key)
+    if not parts:
+        abort(404)
+    try:
+        with transaction() as cur:
+            set_crm_user(cur)
+            deleted = crud.delete(cur, table, parts)
+            if deleted:
+                audit(cur, g.user["account_id"], "record_deleted", f"{table} #{key}")
+        flash(f"{crud.TABLE_TITLE[table]}: record {key} deleted." if deleted else "That record no longer exists.",
+              "ok" if deleted else "info")
+    except pymysql.MySQLError as error:
+        flash(database_refused(error), "error")
+    return redirect(url_for("data_list", table=table))
+
+
+# --------------------------------------------------------------------------- business operations (stored procedures)
+def run_procedure(call, args, detail, done_message, back):
+    """CALL a stored procedure as the signed-in user; MySQL errors (SIGNAL included) become messages."""
+    try:
+        with transaction() as cur:
+            set_crm_user(cur)
+            cur.execute(call, args)
+            result = None
+            if "@out" in call:
+                cur.execute("SELECT @out AS result")
+                result = cur.fetchone()["result"]
+            audit(cur, g.user["account_id"], "procedure_called", detail.replace("{result}", str(result)))
+        flash(done_message.replace("{result}", str(result)), "ok")
+        return redirect(back)
+    except pymysql.MySQLError as error:
+        flash(database_refused(error), "error")
+        return None
+
+
+@app.route("/leads/<int:record_id>/convert", methods=["GET", "POST"])
+def convert_lead(record_id):
+    if not can("edit", "leads"):
+        return no_access()
+    found = rows("""SELECT lead_id, CONCAT(first_name, ' ', last_name) AS name, company_name, status, lead_score
+                    FROM leads WHERE lead_id = %s""", (record_id,))
+    if not found:
+        abort(404)
+    lead = found[0]
+    form = request.form
+    if request.method == "POST":
+        done = run_procedure("CALL sp_convert_lead(%s, %s, %s, %s, @out)",
+                             (record_id, form.get("opportunity_name", "").strip(), form.get("amount") or 0,
+                              form.get("expected_close") or None),
+                             f"sp_convert_lead({record_id}) -> opportunity " + "{result}",
+                             f"Lead {record_id} converted: opportunity " + "{result}" + " created with its account and contact.",
+                             url_for("data_list", table="opportunities"))
+        if done:
+            return done
+    fields = [
+        {"name": "opportunity_name", "label": "Deal name", "type": "text", "required": True,
+         "value": form.get("opportunity_name", f"{lead['company_name']} deal")},
+        {"name": "amount", "label": "Deal amount (PKR)", "type": "number", "step": "0.01", "required": True,
+         "value": form.get("amount", "")},
+        {"name": "expected_close", "label": "Expected close date", "type": "date", "required": True,
+         "value": form.get("expected_close", "")},
+    ]
+    return render_template("action.html", page="leads", title=f"Convert lead {record_id}",
+                           summary=[("Lead", lead["name"]), ("Company", lead["company_name"]),
+                                    ("Status", lead["status"]), ("Score", lead["lead_score"])],
+                           text="sp_convert_lead creates the account (unless the company already exists), the "
+                                "contact and the deal, and marks the lead as converted, all in one transaction. "
+                                "Only qualified leads can be converted.",
+                           fields=fields, button="Convert lead", back=url_for("data_list", table="leads"))
+
+
+@app.route("/pipeline/<int:record_id>/stage", methods=["GET", "POST"])
+def deal_stage(record_id):
+    if not can("edit", "pipeline"):
+        return no_access()
+    found = rows("""SELECT opportunity_id, opportunity_name, account_name, stage_name, amount
+                    FROM vw_sales_pipeline WHERE opportunity_id = %s""", (record_id,))
+    if not found:
+        abort(404)
+    deal = found[0]
+    form = request.form
+    if request.method == "POST":
+        done = run_procedure("CALL sp_update_opportunity_stage(%s, %s, %s, %s)",
+                             (record_id, form.get("stage_name"), g.user["user_id"],
+                              form.get("loss_reason", "").strip() or None),
+                             f"sp_update_opportunity_stage({record_id}, {form.get('stage_name')})",
+                             f"Deal {record_id} moved to {form.get('stage_name')}.",
+                             url_for("data_list", table="opportunities"))
+        if done:
+            return done
+    stages = [r["stage_name"] for r in rows("SELECT stage_name FROM pipeline_stages ORDER BY stage_order")]
+    fields = [
+        {"name": "stage_name", "label": "New stage", "type": "select", "options": stages, "required": True,
+         "value": form.get("stage_name", deal["stage_name"])},
+        {"name": "loss_reason", "label": "Loss reason", "type": "text", "required": False,
+         "help": "Required for Closed Lost.", "value": form.get("loss_reason", "")},
+    ]
+    return render_template("action.html", page="pipeline", title=f"Change the stage of deal {record_id}",
+                           summary=[("Deal", deal["opportunity_name"]), ("Account", deal["account_name"]),
+                                    ("Current stage", deal["stage_name"]), ("Amount", pkr(deal["amount"]))],
+                           text="sp_update_opportunity_stage moves the deal; the trigger records the change in the "
+                                "stage history, and a deal closed as won gets its invoice in the same transaction.",
+                           fields=fields, button="Change stage", back=url_for("data_list", table="opportunities"))
+
+
+@app.route("/invoices/<int:record_id>/payment", methods=["GET", "POST"])
+def record_payment(record_id):
+    if not can("add", "invoices"):
+        return no_access()
+    found = rows("""SELECT invoice_id, invoice_number, account_name, total_amount, amount_paid, balance_due, status
+                    FROM vw_invoice_balance WHERE invoice_id = %s""", (record_id,))
+    if not found:
+        abort(404)
+    invoice = found[0]
+    form = request.form
+    if request.method == "POST":
+        done = run_procedure("CALL sp_record_payment(%s, %s, %s, %s)",
+                             (record_id, form.get("amount") or 0, form.get("payment_method"),
+                              form.get("reference_no", "").strip() or None),
+                             f"sp_record_payment({record_id}, {form.get('amount')})",
+                             f"Payment recorded on invoice {invoice['invoice_number']}.",
+                             url_for("data_list", table="invoices"))
+        if done:
+            return done
+    methods = next(c["choices"] for c in crud.table_info("payments")["columns"] if c["name"] == "payment_method")
+    fields = [
+        {"name": "amount", "label": "Amount (PKR)", "type": "number", "step": "0.01", "required": True,
+         "value": form.get("amount", "")},
+        {"name": "payment_method", "label": "Method", "type": "select", "options": methods, "required": True,
+         "value": form.get("payment_method", methods[0] if methods else "")},
+        {"name": "reference_no", "label": "Reference", "type": "text", "required": False,
+         "value": form.get("reference_no", "")},
+    ]
+    return render_template("action.html", page="invoices", title=f"Record a payment on {invoice['invoice_number']}",
+                           summary=[("Account", invoice["account_name"]), ("Total", pkr(invoice["total_amount"])),
+                                    ("Paid", pkr(invoice["amount_paid"])), ("Balance due", pkr(invoice["balance_due"])),
+                                    ("Status", invoice["status"])],
+                           text="sp_record_payment adds the payment and updates the invoice status in one "
+                                "transaction, and refuses a payment larger than the balance due.",
+                           fields=fields, button="Record payment", back=url_for("data_list", table="invoices"))
 
 
 # --------------------------------------------------------------------------- formatting
@@ -564,7 +780,9 @@ def when(value):
 def layout():
     user = g.get("user")
     tabs = [(endpoint, label) for endpoint, label, privilege in NAV if user and privilege in user["privileges"]]
-    return {"nav": tabs, "github": GITHUB, "user": user, "csrf_token": csrf_token}
+    return {"nav": tabs, "github": GITHUB, "user": user, "csrf_token": csrf_token, "can": can,
+            "segments": crud.SEGMENTS, "privilege_summary": privilege_summary,
+            "labels": {endpoint: label for endpoint, label, _ in NAV}}
 
 
 def share(part, whole):

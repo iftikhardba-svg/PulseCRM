@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Add' if adding else 'Edit' }} · {{ title }}{% endblock %}
+{% block content %}
+<p><a href="/data/{{ table }}">← {{ title }}</a></p>
+<h1>{{ 'Add a record to' if adding else 'Edit' }} {{ title|lower }}{% if not adding %} <code>#{{ key }}</code>{% endif %}</h1>
+<p class="lead">The fields come from the <code>{{ table }}</code> table. MySQL checks every rule when you save: required
+  values, foreign keys, unique keys and CHECK constraints. If a rule is broken, its message is shown here.</p>
+
+<div class="card">
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    {% for c in fields %}
+      {% if not c.editable %}
+        {% if not adding %}
+          <label>{{ c.label }} <span class="hint"><code>{{ c.name }}</code> ·
+            {% if c.generated %}calculated by MySQL{% elif c.db_time %}set by MySQL{% elif c.auto %}AUTO_INCREMENT key{% else %}part of the primary key{% endif %}</span></label>
+          <div class="ro">{{ row[c.name] if row[c.name] is not none else '–' }}</div>
+        {% endif %}
+      {% else %}
+        {% set v = values.get(c.name, '') %}
+        <label for="f_{{ c.name }}">{{ c.label }}{% if c.required %} <span class="req">*</span>{% endif %}
+          <span class="hint"><code>{{ c.name }}</code>{% if c.help %} · {{ c.help }}{% endif %}</span></label>
+        {% if c.kind == 'fk' %}
+          <select id="f_{{ c.name }}" name="{{ c.name }}" {{ 'required' if c.required }}>
+            {% if c.nullable or adding %}<option value="">{{ '– none –' if c.nullable else '– choose –' }}</option>{% endif %}
+            {% for id, label in options[c.name] %}
+              <option value="{{ id }}" {{ 'selected' if v|string == id|string }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        {% elif c.kind == 'choice' %}
+          <select id="f_{{ c.name }}" name="{{ c.name }}" {{ 'required' if c.required }}>
+            {% if c.nullable %}<option value="">– none –</option>{% endif %}
+            {% for choice in c.choices %}<option {{ 'selected' if v == choice }}>{{ choice }}</option>{% endfor %}
+          </select>
+        {% elif c.kind == 'bool' %}
+          <label class="check"><input type="checkbox" id="f_{{ c.name }}" name="{{ c.name }}"
+            {{ 'checked' if v in ('1', 'on', 'True') }}><span>Yes</span></label>
+        {% elif c.kind in ('int', 'decimal') %}
+          <input type="number" id="f_{{ c.name }}" name="{{ c.name }}" value="{{ v }}" {{ 'required' if c.required }}
+                 step="{{ ('0.' ~ '0' * (c.scale - 1) ~ '1') if c.kind == 'decimal' and c.scale else '1' }}">
+        {% elif c.kind == 'date' %}
+          <input type="date" id="f_{{ c.name }}" name="{{ c.name }}" value="{{ v }}" {{ 'required' if c.required }}>
+        {% elif c.kind == 'datetime' %}
+          <input type="datetime-local" id="f_{{ c.name }}" name="{{ c.name }}" value="{{ v }}" {{ 'required' if c.required }}>
+        {% elif c.kind == 'textarea' %}
+          <textarea id="f_{{ c.name }}" name="{{ c.name }}" maxlength="{{ c.maxlen or '' }}" rows="3"
+                    {{ 'required' if c.required }}>{{ v }}</textarea>
+        {% else %}
+          <input type="text" id="f_{{ c.name }}" name="{{ c.name }}" value="{{ v }}" maxlength="{{ c.maxlen or '' }}"
+                 {{ 'required' if c.required }}>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+    <div class="actions">
+      <button class="btn" type="submit">{{ 'Add record' if adding else 'Save changes' }}</button>
+      <a class="btn secondary" href="/data/{{ table }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -98,6 +98,22 @@
     .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
     .privs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 16px; }
     .login-card { max-width: 400px; margin: 30px auto; }
+    textarea { width: 100%; max-width: 620px; padding: 8px 10px; border: 1px solid #c5ccd8; border-radius: 8px; font: inherit; }
+    .req { color: var(--red); }
+    .ro { padding: 6px 0; color: var(--muted); }
+    .manage { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 18px; }
+    .manage-label { font-weight: 600; font-size: 14px; color: var(--navy); }
+    .chip { display: inline-block; padding: 4px 12px; border-radius: 999px; background: #e7eefb; color: var(--blue);
+            font-size: 13px; font-weight: 600; }
+    .chip:hover, .chip.on { background: var(--navy); color: #fff; text-decoration: none; }
+    table.data td { white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+    .row-actions { white-space: nowrap; }
+    .row-actions a, .row-actions form { margin-right: 10px; }
+    .row-actions form { display: inline; }
+    button.danger-link { color: var(--red); }
+    table.matrix { width: auto; }
+    table.matrix th, table.matrix td { text-align: center; padding: 6px 14px; }
+    table.matrix td:first-child, table.matrix th:first-child { text-align: left; }
     @media (max-width: 760px) {
       .table-wrap table.wide { min-width: 720px; }
     }

@@ -1,20 +1,34 @@
 # PulseCRM Web Dashboard
 
-A reporting website for the `pulse_crm` database, written in Python with Flask and hosted on Vercel. Users sign in, and each CRM page runs `SELECT` queries against the reporting views in `database/pulse_crm.sql`:
+A CRM website for the `pulse_crm` database, written in Python with Flask and hosted on Vercel. Users sign in. Each page shows reports from the views in `database/pulse_crm.sql`, and links to its tables, where users with the right privileges add, edit and delete records.
 
-| Page | Privilege | Source |
+| Page | Report source | Tables (add, edit, delete) |
 |---|---|---|
-| Overview | `view_overview` | KPIs, pipeline by stage, leads by source, top accounts |
-| Pipeline | `view_pipeline` | `vw_sales_pipeline` |
-| Accounts | `view_accounts` | `vw_account_360` |
-| Sales Team | `view_team` | `vw_sales_rep_performance` |
-| Leads | `view_leads` | `vw_lead_conversion_by_source` and `leads` |
-| Support | `view_support` | `vw_ticket_resolution` |
-| Invoices | `view_invoices` | `vw_invoice_balance` |
-| Database | `view_database` | Live row count of all 18 tables, ER diagram, integrity rules |
-| Users | `manage_users` | Accounts, privileges and the activity log |
+| Overview | KPIs, pipeline by stage, leads by source, top accounts | none |
+| Pipeline | `vw_sales_pipeline` | deals, deal line items, activities, products, pipeline stages; stage history read-only |
+| Accounts | `vw_account_360` | accounts, contacts, industries |
+| Sales Team | `vw_sales_rep_performance` | CRM staff (`users`), roles |
+| Leads | `vw_lead_conversion_by_source`, `leads` | leads, campaigns, campaign members, lead sources |
+| Support | `vw_ticket_resolution` | tickets |
+| Invoices | `vw_invoice_balance` | invoices, payments |
+| Database | Row counts of all 18 tables, ER diagram, integrity rules | none |
+| Users | Accounts, privileges and the activity log | web accounts |
 
 Every signed-in user also has **My account**, where they change their password. `/health` is public and returns the database name, MySQL version and account count as JSON.
+
+## Records
+
+- **Forms follow the database.** `web/crud.py` reads the columns, types, NOT NULL rules, defaults, primary keys, foreign keys and `CHECK (... IN (...))` lists from `information_schema`. Foreign keys become dropdowns with readable names, CHECK lists become choices, and AUTO_INCREMENT keys, generated columns (`line_total`) and timestamps set by MySQL are read-only.
+- **MySQL has the last word.** Every value is sent as a query parameter, and when a change breaks a rule the page shows MySQL's own error. Examples: 3819 for a CHECK, 1062 for a duplicate, 1452 for a missing parent, 1451 for a row that others still use.
+- **Business operations call the stored procedures**, so their transactions and checks apply:
+
+| Operation | Procedure | Privilege |
+|---|---|---|
+| Convert a qualified lead into account, contact and deal | `sp_convert_lead` | Leads: edit |
+| Move a deal to another stage; a won deal gets its invoice | `sp_update_opportunity_stage` | Pipeline: edit |
+| Record a payment, refusing more than the balance due | `sp_record_payment` | Invoices: add |
+
+- **Every change is recorded.** Before each change the app sets `@crm_user_id` to the CRM staff member linked to the account, so `trg_opportunities_stage_history` records who moved a deal. Each add, edit, delete and procedure call is written to `web_audit_log`.
 
 ## Sign-in and privileges
 
@@ -22,11 +36,21 @@ Accounts live in five extra tables, created by [database/web_access.sql](../data
 
 | Table | Holds |
 |---|---|
-| `web_privileges` | The nine privileges above |
+| `web_privileges` | 27 privileges: `view_`, `add_`, `edit_` and `delete_` for each page, and `manage_users` |
 | `web_accounts` | User name, name, optional link to a CRM staff member (`users`), password hash, status |
 | `web_account_privileges` | Which privileges each account has |
 | `web_role_privileges` | Default privileges for each CRM role, filled in when an account is linked to staff |
-| `web_audit_log` | Sign-ins, failed attempts and every change made on the Users page |
+| `web_audit_log` | Sign-ins, account changes and record changes |
+
+On the Users page, privileges are a grid: one row per page, with View, Add, Edit and Delete columns. The CRM role defaults are:
+
+| Role | Pages | Can change |
+|---|---|---|
+| Administrator | all | everything |
+| Sales Manager | Overview, Pipeline, Accounts, Sales Team, Leads, Invoices | add, edit and delete Pipeline, Accounts and Leads; add and edit Invoices |
+| Sales Representative | Overview, Pipeline, Accounts, Leads | add and edit Pipeline, Accounts and Leads |
+| Marketing | Overview, Leads | add and edit Leads |
+| Support Agent | Overview, Accounts, Support | add and edit Support |
 
 - **Passwords:** stored only as salted scrypt hashes. New accounts get a temporary password that must be changed at the first sign-in.
 - **Lockout:** five wrong passwords lock an account for 15 minutes; an administrator can unlock it sooner.
@@ -36,12 +60,14 @@ Accounts live in five extra tables, created by [database/web_access.sql](../data
 
 ## Database access
 
-The site connects as `pulse_web` ([database/web_app_user.sql](../database/web_app_user.sql)). This MySQL account has two kinds of privilege:
+The site connects as `pulse_web` ([database/web_app_user.sql](../database/web_app_user.sql)), which is granted table by table:
 
-- it can read every table and view;
-- it can write only to `web_accounts`, `web_account_privileges` and `web_audit_log`.
+- `SELECT` on every table and view;
+- `INSERT`, `UPDATE` and `DELETE` on the 17 CRM tables. The stage history is excluded: only the trigger and the procedures write to it;
+- `EXECUTE` on `sp_convert_lead`, `sp_update_opportunity_stage` and `sp_record_payment`;
+- writes on `web_accounts`, `web_account_privileges` and `web_audit_log`.
 
-CRM pages also run in `READ ONLY` sessions, so nothing on the website can change CRM data.
+It has no `CREATE`, `ALTER`, `DROP` or `GRANT` rights. Report pages run in `READ ONLY` sessions; changes run in one transaction each.
 
 ## Settings
 
@@ -83,7 +109,7 @@ flask --app web/app.py run
    - creates the first administrator, `admin`. Its temporary password goes to `web/.env.admin`, which is git-ignored;
    - writes the three settings to `web/.env.vercel`, which is git-ignored.
 
-   On a database that is already running, `python web/setup_cloud_db.py --keep-data` adds or updates only the sign-in tables. It keeps the data and `pulse_web`'s password.
+   On a database that is already running, `python web/setup_cloud_db.py --keep-data` updates only the sign-in tables, the new privileges (granted to the active administrators) and `pulse_web`'s grants. It keeps the data and `pulse_web`'s password.
 2. **Website:**
    - In Vercel, import this GitHub repository and set **Root Directory** to `web`.
    - Add the three settings as environment variables.

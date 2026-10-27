@@ -3,7 +3,8 @@
 --
 --  Run after database/pulse_crm.sql, in the same database. It adds five
 --  tables for the web application only; the 18 CRM tables are unchanged.
---    web_privileges          what can be granted (one per page, plus user management)
+--    web_privileges          what can be granted: view, add, edit and delete per page,
+--                            plus user management
 --    web_accounts            who may sign in (optionally linked to a CRM user)
 --    web_account_privileges  which privileges each account has (bridge table)
 --    web_role_privileges     default privileges for each CRM role (bridge table)
@@ -70,7 +71,8 @@ CREATE TABLE IF NOT EXISTS web_audit_log (
     CONSTRAINT fk_web_audit_account FOREIGN KEY (account_id) REFERENCES web_accounts (account_id) ON DELETE SET NULL,
     CONSTRAINT chk_web_audit_action CHECK (action IN ('login', 'login_failed', 'logout', 'password_changed',
                                                      'account_created', 'account_updated', 'password_reset',
-                                                     'account_deleted'))
+                                                     'account_deleted', 'record_added', 'record_updated',
+                                                     'record_deleted', 'procedure_called'))
 ) ENGINE = InnoDB COMMENT = 'Sign-ins and user-management changes';
 
 
@@ -86,6 +88,27 @@ INSERT IGNORE INTO web_privileges (privilege_code, privilege_name, description, 
 ('view_database', 'Database',     'Table row counts, ER diagram and integrity rules',          8),
 ('manage_users',  'Manage users', 'Create web accounts, grant privileges, reset passwords',    9);
 
+-- add, edit and delete records on a page (codes are <action>_<page>)
+INSERT IGNORE INTO web_privileges (privilege_code, privilege_name, description, sort_order) VALUES
+('add_pipeline',    'Pipeline: add',      'Add deals, line items, activities, products and stages',      10),
+('edit_pipeline',   'Pipeline: edit',     'Edit those records and move deals between stages',             11),
+('delete_pipeline', 'Pipeline: delete',   'Delete deals, line items, activities, products and stages',   12),
+('add_accounts',    'Accounts: add',      'Add accounts, contacts and industries',                        13),
+('edit_accounts',   'Accounts: edit',     'Edit accounts, contacts and industries',                       14),
+('delete_accounts', 'Accounts: delete',   'Delete accounts, contacts and industries',                     15),
+('add_team',        'Sales Team: add',    'Add CRM staff and roles',                                      16),
+('edit_team',       'Sales Team: edit',   'Edit CRM staff and roles',                                     17),
+('delete_team',     'Sales Team: delete', 'Delete CRM staff and roles',                                   18),
+('add_leads',       'Leads: add',         'Add leads, campaigns, campaign members and lead sources',      19),
+('edit_leads',      'Leads: edit',        'Edit those records and convert qualified leads',               20),
+('delete_leads',    'Leads: delete',      'Delete leads, campaigns, campaign members and lead sources',   21),
+('add_support',     'Support: add',       'Add support tickets',                                          22),
+('edit_support',    'Support: edit',      'Edit support tickets',                                         23),
+('delete_support',  'Support: delete',    'Delete support tickets',                                       24),
+('add_invoices',    'Invoices: add',      'Add invoices and payments, and record payments',               25),
+('edit_invoices',   'Invoices: edit',     'Edit invoices and payments',                                   26),
+('delete_invoices', 'Invoices: delete',   'Delete invoices and payments',                                 27);
+
 -- ---------- default privileges for each CRM role ---------------------
 INSERT IGNORE INTO web_role_privileges (role_id, privilege_code)
 SELECT r.role_id, p.privilege_code
@@ -93,10 +116,13 @@ FROM roles r
 JOIN web_privileges p
   ON r.role_name = 'Administrator'
   OR (r.role_name = 'Sales Manager'
-      AND p.privilege_code IN ('view_overview', 'view_pipeline', 'view_accounts', 'view_team', 'view_leads', 'view_invoices'))
+      AND p.privilege_code IN ('view_overview', 'view_pipeline', 'view_accounts', 'view_team', 'view_leads', 'view_invoices',
+                               'add_pipeline', 'edit_pipeline', 'delete_pipeline', 'add_accounts', 'edit_accounts',
+                               'delete_accounts', 'add_leads', 'edit_leads', 'delete_leads', 'add_invoices', 'edit_invoices'))
   OR (r.role_name = 'Sales Representative'
-      AND p.privilege_code IN ('view_overview', 'view_pipeline', 'view_accounts', 'view_leads'))
+      AND p.privilege_code IN ('view_overview', 'view_pipeline', 'view_accounts', 'view_leads',
+                               'add_pipeline', 'edit_pipeline', 'add_accounts', 'edit_accounts', 'add_leads', 'edit_leads'))
   OR (r.role_name = 'Marketing'
-      AND p.privilege_code IN ('view_overview', 'view_leads'))
+      AND p.privilege_code IN ('view_overview', 'view_leads', 'add_leads', 'edit_leads'))
   OR (r.role_name = 'Support Agent'
-      AND p.privilege_code IN ('view_overview', 'view_accounts', 'view_support'));
+      AND p.privilege_code IN ('view_overview', 'view_accounts', 'view_support', 'add_support', 'edit_support'));

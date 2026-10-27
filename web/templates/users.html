@@ -3,8 +3,9 @@
 {% block title %}Users{% endblock %}
 {% block content %}
 <h1>Users and privileges</h1>
-<p class="lead">Web accounts that can sign in to PulseCRM. Each privilege opens one page; <strong>Manage users</strong>
-  opens this page. Linking an account to a CRM staff member fills in the default privileges of their CRM role.</p>
+<p class="lead">Web accounts that can sign in to PulseCRM. Privileges are granted per page: <strong>View</strong>
+  opens it, <strong>Add</strong>, <strong>Edit</strong> and <strong>Delete</strong> allow changing its records, and
+  <strong>Manage users</strong> opens this page. Linking an account to a CRM staff member fills in the default privileges of their CRM role.</p>
 
 <div class="card" style="margin-bottom: 18px">
   <h2>Accounts ({{ accounts|length }})</h2>
@@ -20,7 +21,7 @@
             {% if not a.is_active %}{{ badge('Inactive') }}{% elif a.locked %}{{ badge('Locked') }}{% else %}{{ badge('Active') }}{% endif %}
             {% if a.must_change_password %}<span class="hint">temporary password</span>{% endif %}
           </td>
-          <td>{{ a.privilege_names or 'none' }}</td>
+          <td>{{ a.privilege_summary }}</td>
           <td class="n">{{ a.last_login_at|when }}</td>
           <td><a href="/users/{{ a.account_id }}">Edit</a></td>
         </tr>
@@ -49,13 +50,7 @@
     <label for="password">Temporary password <span class="hint">(at least 10 characters; they must change it when they first sign in)</span></label>
     <input type="password" id="password" name="password" autocomplete="new-password" minlength="10" required>
     <label>Privileges</label>
-    <div class="privs">
-      {% for p in privileges %}
-        <label class="check"><input type="checkbox" name="privileges" value="{{ p.privilege_code }}"
-          {{ 'checked' if p.privilege_code in form.getlist('privileges') }}>
-          <span>{{ p.privilege_name }}<br><span class="hint">{{ p.description }}</span></span></label>
-      {% endfor %}
-    </div>
+    {% include "_privilege_matrix.html" %}
     <div class="actions"><button class="btn" type="submit">Create account</button></div>
   </form>
 </div>

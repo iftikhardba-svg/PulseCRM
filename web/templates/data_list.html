@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<p><a href="{{ '/' ~ page }}">← {{ labels[page] }}</a></p>
+<h1>{{ title }} <span class="muted" style="font-size: 15px; font-weight: 400">table <code>{{ table }}</code> · {{ records|length }} rows</span></h1>
+{% include "_manage.html" %}
+
+{% if read_only %}
+  <div class="note-box">This table is the audit trail: only the <code>trg_opportunities_stage_history</code> trigger and
+    the stored procedures write to it, so it cannot be changed here.</div>
+{% elif can('add', page) %}
+  <p><a class="btn" href="/data/{{ table }}/new">Add a record</a></p>
+{% endif %}
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="wide data">
+      <tr>
+        {% for c in info.columns %}<th title="{{ c.name }}{% if c.help %}: {{ c.help }}{% endif %}">{{ c.label }}</th>{% endfor %}
+        <th></th>
+      </tr>
+      {% for r in records %}
+        <tr>
+          {% for c in info.columns %}
+            {% set v = r[c.name] %}
+            <td class="{{ 'n' if c.kind in ('int', 'decimal', 'generated') }}">
+              {%- if v is none -%}<span class="muted">–</span>
+              {%- elif c.fk -%}{{ r[c.name ~ '__label'] }}
+              {%- elif c.kind == 'bool' -%}{{ 'Yes' if v else 'No' }}
+              {%- else -%}{{ v }}{%- endif -%}
+            </td>
+          {% endfor %}
+          <td class="row-actions">
+            {% for label, endpoint, need in row_actions %}
+              {% if can(need, page) %}<a href="{{ url_for(endpoint, record_id=r._key) }}">{{ label }}</a>{% endif %}
+            {% endfor %}
+            {% if not read_only and can('edit', page) %}<a href="/data/{{ table }}/{{ r._key }}/edit">Edit</a>{% endif %}
+            {% if not read_only and can('delete', page) %}
+              <form method="post" action="/data/{{ table }}/{{ r._key }}/delete"
+                    onsubmit="return confirm('Delete record {{ r._key }} from {{ table }}?');">
+                <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+                <button class="linkish danger-link" type="submit">Delete</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="{{ info.columns|length + 1 }}" class="muted">No rows.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

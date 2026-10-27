@@ -20,13 +20,7 @@
       {% endfor %}
     </select>
     <label>Privileges</label>
-    <div class="privs">
-      {% for p in privileges %}
-        <label class="check"><input type="checkbox" name="privileges" value="{{ p.privilege_code }}"
-          {{ 'checked' if p.privilege_code in target.privileges }}>
-          <span>{{ p.privilege_name }}<br><span class="hint">{{ p.description }}</span></span></label>
-      {% endfor %}
-    </div>
+    {% include "_privilege_matrix.html" %}
     <label class="check"><input type="checkbox" name="is_active" {{ 'checked' if target.is_active }}>
       <span>Active <span class="hint">(clear to block sign-in without deleting the account)</span></span></label>
     {% if target.locked %}
