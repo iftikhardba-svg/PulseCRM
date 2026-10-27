@@ -6,13 +6,14 @@
 
 1. Builds pulse_crm by running database/pulse_crm.sql unchanged (skipped with --keep-data).
 2. Adds the sign-in tables from database/web_access.sql. On an existing database it also
-   updates the allowed audit actions and gives new privileges to the active administrators.
-3. Creates pulse_web with a random password (kept with --keep-data) and the grants in
-   database/web_app_user.sql: SELECT on everything, INSERT/UPDATE/DELETE on the CRM tables
-   (not the stage history), EXECUTE on three procedures, and writes on the sign-in tables.
+   updates the allowed audit actions, gives new privileges to the active administrators and
+   removes the per-account lockout columns of older versions.
+3. Creates pulse_web with a random password (kept with --keep-data) and the rules in
+   database/web_app_user.sql: TLS only, SELECT on everything, INSERT/UPDATE/DELETE on the CRM
+   tables (not the stage history), EXECUTE on three procedures, and writes on the sign-in tables.
 4. Creates the first administrator, "admin", if no active account can manage users. Its
    temporary password goes to web/.env.admin (git-ignored); it must be changed at first sign-in.
-5. Checks that pulse_web cannot change the stage history or create tables.
+5. Checks that pulse_web cannot connect without TLS, change the stage history or create tables.
 6. Writes DATABASE_URL, DATABASE_CA_CERT and SECRET_KEY for Vercel to web/.env.vercel (git-ignored).
 
 Before running, put the administrator connection in web/.env:
@@ -134,6 +135,14 @@ def main():
                             JOIN web_privileges p ON p.privilege_code IN ({', '.join(['%s'] * len(added))})
                             WHERE a.is_active = TRUE""", added)
             print(f"   {len(added)} new privileges, granted to every active administrator ({cur.rowcount} grants)")
+        # wrong passwords are now throttled per network address (web_login_failures), not per account
+        cur.execute("""SELECT column_name FROM information_schema.columns
+                       WHERE table_schema = 'pulse_crm' AND table_name = 'web_accounts'
+                         AND column_name IN ('failed_logins', 'locked_until')""")
+        old_columns = [row[0] for row in cur.fetchall()]
+        if old_columns:
+            cur.execute("ALTER TABLE web_accounts " + ", ".join(f"DROP COLUMN {c}" for c in old_columns))
+            print(f"   web_accounts: per-account lockout columns removed ({', '.join(old_columns)})")
     print("2. sign-in tables added or updated from database/web_access.sql")
 
     # 3. the web application's MySQL account
@@ -149,8 +158,10 @@ def main():
             # '%%' is the any-host wildcard '%', escaped because these queries take a %s parameter
             cur.execute(f"CREATE USER IF NOT EXISTS '{WEB_USER}'@'%%' IDENTIFIED BY %s", (web_password,))
             cur.execute(f"ALTER USER '{WEB_USER}'@'%%' IDENTIFIED BY %s", (web_password,))
-            database_url = f"mysql://{WEB_USER}:{quote(web_password, safe='')}@{server[0]}:{server[1]}/pulse_crm"
-        for stmt in re.findall(r"^(GRANT .*?);", grants_sql, flags=re.M):
+            database_url = (f"mysql://{WEB_USER}:{quote(web_password, safe='')}@{server[0]}:{server[1]}"
+                            "/pulse_crm?ssl-mode=REQUIRED")
+        # REQUIRE SSL and the grants, in file order
+        for stmt in re.findall(r"^((?:ALTER USER|GRANT) .*?);", grants_sql, flags=re.M):
             cur.execute(stmt)
         cur.execute(f"SHOW GRANTS FOR '{WEB_USER}'@'%'")
         grants = [row[0] for row in cur.fetchall()]
@@ -170,7 +181,7 @@ def main():
             cur.execute("""INSERT INTO web_accounts (username, display_name, password_hash, must_change_password)
                            VALUES (%s, 'Administrator', %s, TRUE)
                            ON DUPLICATE KEY UPDATE password_hash = %s, must_change_password = TRUE,
-                                                   is_active = TRUE, failed_logins = 0, locked_until = NULL""",
+                                                   is_active = TRUE""",
                         (FIRST_ADMIN, generate_password_hash(temporary), generate_password_hash(temporary)))
             cur.execute("""INSERT IGNORE INTO web_account_privileges (account_id, privilege_code)
                            SELECT a.account_id, p.privilege_code
@@ -181,10 +192,17 @@ def main():
                 f.write(f"ADMIN_USERNAME={FIRST_ADMIN}\nADMIN_TEMPORARY_PASSWORD={temporary}\n")
             print(f"4. administrator '{FIRST_ADMIN}' created; temporary password in {admin_file} (git-ignored)")
 
-    # 5. the web account reads the data, but cannot touch the audit trail or the schema
+    # 5. the web account connects only over TLS, reads the data, and cannot touch the audit trail or the schema
     u = urlparse(database_url)
-    with pymysql.connect(host=u.hostname, port=u.port, user=unquote(u.username), password=unquote(u.password),
-                         database="pulse_crm", ssl=ssl) as conn, conn.cursor() as cur:
+    web_login = {"host": u.hostname, "port": u.port, "user": unquote(u.username), "password": unquote(u.password),
+                 "database": "pulse_crm"}
+    try:
+        pymysql.connect(**web_login).close()
+        sys.exit(f"ERROR: {WEB_USER} could connect without TLS. Check REQUIRE SSL in database/web_app_user.sql.")
+    except pymysql.err.OperationalError as error:
+        plain_refused = error.args[0]
+    # without web/ca.pem (a local or CI server) the connection is encrypted but the certificate is not checked
+    with pymysql.connect(**web_login, ssl=ssl or {"check_hostname": False}) as conn, conn.cursor() as cur:
         cur.execute("SELECT COUNT(*) FROM vw_account_360")
         readable = cur.fetchone()[0]
         refused = []
@@ -195,8 +213,11 @@ def main():
                 sys.exit(f"ERROR: {WEB_USER} was allowed to run: {statement}. Check its grants.")
             except pymysql.err.MySQLError as error:
                 refused.append(str(error.args[0]))
-        print(f"5. {WEB_USER} reads vw_account_360 ({readable} rows) and is refused on the stage history and on "
-              f"CREATE TABLE (MySQL errors {', '.join(refused)})")
+        cur.execute("SHOW SESSION STATUS LIKE 'Ssl_cipher'")
+        cipher = cur.fetchone()[1]
+        print(f"5. {WEB_USER} is refused without TLS (MySQL error {plain_refused}), connects with {cipher}, reads "
+              f"vw_account_360 ({readable} rows) and is refused on the stage history and on CREATE TABLE "
+              f"(MySQL errors {', '.join(refused)})")
 
     # 6. settings for Vercel
     ca_text = ""

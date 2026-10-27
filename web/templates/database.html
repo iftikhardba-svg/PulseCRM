@@ -8,7 +8,8 @@
 
 <div class="note-box">
   <strong>How this site changes data.</strong> It connects as a separate MySQL user,
-  <a href="{{ github }}/blob/main/database/web_app_user.sql"><code>pulse_web</code></a>, granted table by table:
+  <a href="{{ github }}/blob/main/database/web_app_user.sql"><code>pulse_web</code></a>, which MySQL accepts only over
+  TLS and which is granted table by table:
   <code>SELECT</code> everywhere, <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code> on the 17 CRM tables,
   <code>EXECUTE</code> on <code>sp_convert_lead</code>, <code>sp_update_opportunity_stage</code> and
   <code>sp_record_payment</code>, and no rights on the stage history or the schema. Report pages run in

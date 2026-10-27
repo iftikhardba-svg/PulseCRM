@@ -66,7 +66,6 @@
     .b-partially-paid, .b-high, .b-in-progress, .b-prospect, .b-contacted, .b-unpaid { background: var(--amber-bg); color: var(--amber); }
     .b-partner, .b-new, .b-medium { background: #e7eefb; color: var(--blue); }
     .b-active { background: var(--green-bg); color: var(--green); }
-    .b-locked { background: var(--red-bg); color: var(--red); }
     .note-box { background: #eef4ff; border: 1px solid #cfdcf7; border-radius: 10px; padding: 12px 16px;
                 color: #23406f; font-size: 14px; margin-bottom: 18px; }
     footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
@@ -157,8 +156,15 @@
   <div>
     Final project for <strong>Relational Database Management Systems (RDBMS)</strong>, Postgraduate Diploma in Generative AI,
     NED University of Engineering &amp; Technology, Karachi. By Iftikhar Ahmed (311130); instructor Sir Sajid Majeed.
-    All companies, people and figures are fictional. The CRM pages only read data.
+    All companies, people and figures are fictional. Every change is checked by MySQL's own constraints.
   </div>
 </footer>
+<script nonce="{{ csp_nonce() }}">
+  // Forms with data-confirm (the delete buttons) ask before they are sent.
+  document.addEventListener("submit", function (event) {
+    var message = event.target.getAttribute("data-confirm");
+    if (message && !window.confirm(message)) event.preventDefault();
+  });
+</script>
 </body>
 </html>

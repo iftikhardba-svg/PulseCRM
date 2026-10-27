@@ -1,6 +1,7 @@
 # Builds PulseCRM with docker-compose.yml on every push and checks the result:
-# all database objects and sample rows exist; the web dashboard's sign-in, privileges
-# and user management work through its limited MySQL account; the setup script runs;
+# all database objects and sample rows exist; the web dashboard's sign-in, throttling,
+# privileges and user management work through its limited, TLS-only MySQL account;
+# the setup script runs and upgrades an older sign-in schema;
 # every query runs, and only the seven integrity tests in Section 7 of queries.sql
 # fail, with the expected errors.
 
@@ -64,12 +65,16 @@ jobs:
           .venv/bin/pip install --quiet -r web/requirements.txt
           .venv/bin/python .github/scripts/check_web.py
 
-      - name: Check web/setup_cloud_db.py (full build, then --keep-data)
+      - name: Check web/setup_cloud_db.py (full build, then --keep-data on an older sign-in schema)
         env:
           ADMIN_DATABASE_URL: mysql://root:pulsecrm@127.0.0.1:3307/pulse_crm
         run: |
           .venv/bin/python web/setup_cloud_db.py
-          .venv/bin/python web/setup_cloud_db.py --keep-data
+          # the per-account lockout columns of earlier versions must be removed by --keep-data
+          docker compose exec -T db sh -c 'mysql -uroot -p$MYSQL_ROOT_PASSWORD pulse_crm -e "ALTER TABLE web_accounts ADD COLUMN failed_logins TINYINT UNSIGNED NOT NULL DEFAULT 0, ADD COLUMN locked_until DATETIME NULL"'
+          .venv/bin/python web/setup_cloud_db.py --keep-data | tee keep-data.out
+          grep -q 'per-account lockout columns removed' keep-data.out
+          grep -q 'is refused without TLS' keep-data.out
           test -s web/.env.admin
           grep -q '^SECRET_KEY=' web/.env.vercel
 

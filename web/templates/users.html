@@ -18,7 +18,8 @@
           <td>{{ a.display_name }}</td>
           <td>{{ a.crm_name or '–' }}{% if a.role_name %} <span class="muted">({{ a.role_name }})</span>{% endif %}</td>
           <td>
-            {% if not a.is_active %}{{ badge('Inactive') }}{% elif a.locked %}{{ badge('Locked') }}{% else %}{{ badge('Active') }}{% endif %}
+            {% if not a.is_active %}{{ badge('Inactive') }}{% else %}{{ badge('Active') }}{% endif %}
+            {% if a.blocked %}<span class="hint">blocked from {{ a.blocked }} address{{ 'es' if a.blocked > 1 }}</span>{% endif %}
             {% if a.must_change_password %}<span class="hint">temporary password</span>{% endif %}
           </td>
           <td>{{ a.privilege_summary }}</td>
@@ -70,7 +71,7 @@
   </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
   // Linking a CRM staff member fills in their name and the default privileges of their CRM role.
   document.getElementById("user_id").addEventListener("change", function () {
     var option = this.options[this.selectedIndex];

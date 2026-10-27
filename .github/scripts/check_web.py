@@ -4,7 +4,7 @@ Expects pulse_crm built with database/pulse_crm.sql and database/web_access.sql.
   MYSQL_URL   mysql://root:<password>@127.0.0.1:3307/pulse_crm   administrator connection
   WEB_DB_URL  optional; the connection the app should use. When it is not set, the script
               creates the pulse_web account from database/web_app_user.sql and also checks
-              that this account cannot change CRM data.
+              that this account needs TLS and cannot change the audit trail or the schema.
 """
 import os
 import re
@@ -18,6 +18,8 @@ from werkzeug.security import generate_password_hash
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "web"))
 PAGES = ["/", "/pipeline", "/accounts", "/team", "/leads", "/support", "/invoices", "/database"]
+# network addresses used by the throttling tests (documentation ranges, plus the test client's default)
+ADDRESSES = ("127.0.0.1", "198.51.100.7", "203.0.113.20", "192.0.2.99")
 failures = []
 
 
@@ -29,8 +31,9 @@ def check(ok, message):
 
 def connect(url):
     u = urlparse(url)
+    tls = {"check_hostname": False} if "ssl-mode=REQUIRED" in u.query.upper() else None   # encrypted, unverified
     return pymysql.connect(host=u.hostname, port=u.port or 3306, user=unquote(u.username),
-                           password=unquote(u.password or ""), database=u.path.lstrip("/"), autocommit=True)
+                           password=unquote(u.password or ""), database=u.path.lstrip("/"), autocommit=True, ssl=tls)
 
 
 def token(client, path="/login"):
@@ -57,19 +60,24 @@ def main():
     if not web_url:
         password = secrets.token_urlsafe(18)
         script = open(os.path.join(ROOT, "database", "web_app_user.sql"), encoding="utf-8").read()
-        for stmt in re.findall(r"^(CREATE USER.*?;|GRANT .*?;)", script, flags=re.M):
+        for stmt in re.findall(r"^(CREATE USER.*?;|ALTER USER.*?;|GRANT .*?;)", script, flags=re.M):
             cur.execute(stmt.replace("replace-with-a-strong-password", password))
         cur.execute("SHOW GRANTS FOR 'pulse_web'@'%'")
         grants = " | ".join(row[0] for row in cur.fetchall())
         check("GRANT SELECT ON `pulse_crm`.*" in grants and "`web_accounts`" in grants
+              and "INSERT, DELETE ON `pulse_crm`.`web_login_failures`" in grants
               and "INSERT, UPDATE, DELETE ON `pulse_crm`.`accounts`" in grants
               and "EXECUTE ON PROCEDURE `pulse_crm`.`sp_convert_lead`" in grants
               and "`opportunity_stage_history`" not in grants, f"pulse_web grants: {grants}")
+        cur.execute("SELECT ssl_type FROM mysql.user WHERE user = 'pulse_web' AND host = '%'")
+        check(cur.fetchone()[0] == "ANY", "pulse_web is created with REQUIRE SSL")
         u = urlparse(admin_url)
-        web_url = f"mysql://pulse_web:{password}@{u.hostname}:{u.port}{u.path}"
+        web_url = f"mysql://pulse_web:{password}@{u.hostname}:{u.port}{u.path}?ssl-mode=REQUIRED"
 
     # a known administrator for the test
     cur.execute("DELETE FROM web_accounts WHERE username LIKE 'ci.%'")
+    cur.execute(f"DELETE FROM web_login_failures WHERE ip_address IN ({', '.join(['%s'] * len(ADDRESSES))})",
+                ADDRESSES)
     admin_password = secrets.token_urlsafe(16)
     cur.execute("""INSERT INTO web_accounts (username, display_name, user_id, password_hash, must_change_password)
                    VALUES ('ci.admin', 'CI Administrator', 1, %s, FALSE)""", (generate_password_hash(admin_password),))
@@ -87,6 +95,9 @@ def main():
     r = anon.get("/")
     check(r.status_code == 302 and "/login" in r.headers["Location"], f"/ redirects to sign-in: {r.status_code}")
     check(anon.get("/health").status_code == 200, "/health stays public")
+    csp = anon.get("/login").headers.get("Content-Security-Policy", "")
+    check("script-src 'nonce-" in csp and "default-src 'none'" in csp and "frame-ancestors 'none'" in csp
+          and "unsafe-inline" not in csp.split("script-src")[1].split(";")[0], f"Content-Security-Policy: {csp}")
     r = anon.post("/login", data={"username": "ci.admin", "password": admin_password})
     check(r.status_code == 400, f"sign-in without a CSRF token is rejected: {r.status_code}")
     r = sign_in(anon, "ci.admin", "wrong-password")
@@ -103,6 +114,14 @@ def main():
         title = re.search(r"<h1>(.*?)</h1>", r.get_data(as_text=True))
         check(r.status_code == 200, f"{path}: {r.status_code} {title.group(1) if title else ''}")
     check(">Users</a>" in admin.get("/").get_data(as_text=True), "administrator sees the Users tab")
+    for path in ["/users", f"/users/{admin_id}", "/data/accounts", "/"]:
+        r = admin.get(path)
+        html = r.get_data(as_text=True)
+        nonce = re.search(r"'nonce-([^']+)'", r.headers.get("Content-Security-Policy", ""))
+        tags = re.findall(r"<script[^>]*>", html)
+        check(bool(nonce) and bool(tags) and all(f'nonce="{nonce.group(1)}"' in tag for tag in tags)
+              and not re.search(r"\son[a-z]+=", html),
+              f"{path}: all {len(tags)} script(s) carry this response's nonce and there are no inline handlers")
 
     print("== Records: add, edit, delete")
     for path in ["/data/accounts", "/data/accounts/new", "/data/leads/new", "/data/opportunity_products",
@@ -203,16 +222,33 @@ def main():
     check(">Pipeline</a>" in html and ">Invoices</a>" not in html and ">Users</a>" not in html,
           "ci.rep sees only the granted tabs")
 
-    print("== Lockout")
-    other = web.app.test_client()
+    print("== Throttling per network address")
+    prankster = web.app.test_client()
+    prankster.environ_base["REMOTE_ADDR"] = "198.51.100.7"
     for _ in range(5):
-        sign_in(other, "ci.rep", "not-the-password")
-    r = sign_in(other, "ci.rep", new_password)
-    check("locked" in r.get_data(as_text=True), "five wrong passwords lock the account, even for the right one")
+        sign_in(prankster, "ci.rep", "not-the-password")
+    r = sign_in(prankster, "ci.rep", new_password)
+    check(r.status_code == 429 and "Too many wrong passwords" in r.get_data(as_text=True),
+          "five wrong passwords block that address for ci.rep, even with the right password (429)")
+    classmate = web.app.test_client()
+    classmate.environ_base["REMOTE_ADDR"] = "203.0.113.20"
+    check(sign_in(classmate, "ci.rep", new_password).status_code == 302,
+          "ci.rep still signs in from another address: the account itself is never locked")
+    html = admin.get(f"/users/{rep_id}").get_data(as_text=True)
+    check("198.51.100.7" in html and "Clear the sign-in block" in html, "the Users page shows the blocked address")
     r = post(admin, f"/users/{rep_id}", {"display_name": "CI Rep", "user_id": "4", "is_active": "on", "unlock": "on",
                                          "privileges": ["view_overview", "view_pipeline", "add_pipeline"]})
-    check(r.status_code == 302, "administrator unlocks ci.rep")
-    check(sign_in(other, "ci.rep", new_password).status_code == 302, "ci.rep signs in after the unlock")
+    check(r.status_code == 302, "administrator clears the block")
+    check(sign_in(prankster, "ci.rep", new_password).status_code == 302, "the address signs in after the clear")
+    sprayer = web.app.test_client()
+    sprayer.environ_base["REMOTE_ADDR"] = "192.0.2.99"
+    for i in range(20):
+        sign_in(sprayer, f"nobody{i}", "not-a-password")
+    check(sign_in(sprayer, "ci.rep", new_password).status_code == 429,
+          "20 wrong passwords from one address block it for every account")
+    r = sprayer.post("/login", data={"csrf": token(sprayer), "username": "ci.rep", "password": new_password},
+                     headers={"X-Forwarded-For": "10.9.9.9", "X-Real-IP": "10.9.9.9"})
+    check(r.status_code == 429, "a forged X-Forwarded-For or X-Real-IP header does not get round the block")
 
     print("== Delete and sign out")
     r = post(admin, f"/users/{rep_id}/delete", {})
@@ -230,8 +266,15 @@ def main():
 
     if not os.environ.get("WEB_DB_URL"):
         print("== MySQL privileges of pulse_web")
-        u = urlparse(web_url)
+        try:
+            connect(web_url.split("?")[0]).close()
+            check(False, "pulse_web connected without TLS")
+        except pymysql.MySQLError as error:
+            check(error.args[0] == 1045, f"pulse_web is refused without TLS ({error.args[0]})")
         with connect(web_url) as conn, conn.cursor() as c:
+            c.execute("SHOW SESSION STATUS LIKE 'Ssl_cipher'")
+            cipher = c.fetchone()[1]
+            check(bool(cipher), f"pulse_web connects over TLS ({cipher})")
             for sql_text in ("DELETE FROM opportunity_stage_history WHERE history_id = -1",
                              "INSERT INTO web_privileges VALUES ('x', 'x', 'x', 99)",
                              "CREATE TABLE web_probe (id INT PRIMARY KEY)"):
@@ -242,6 +285,8 @@ def main():
                     check(error.args[0] == 1142, f"pulse_web refused ({error.args[0]}): {sql_text[:45]}")
 
     cur.execute("DELETE FROM web_accounts WHERE username LIKE 'ci.%'")
+    cur.execute(f"DELETE FROM web_login_failures WHERE ip_address IN ({', '.join(['%s'] * len(ADDRESSES))})",
+                ADDRESSES)
     print(f"\n{len(failures)} failure(s)")
     sys.exit(1 if failures else 0)
 

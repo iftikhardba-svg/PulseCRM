@@ -1,7 +1,7 @@
 -- =====================================================================
 --  PulseCRM - sign-in and privileges for the web dashboard
 --
---  Run after database/pulse_crm.sql, in the same database. It adds five
+--  Run after database/pulse_crm.sql, in the same database. It adds six
 --  tables for the web application only; the 18 CRM tables are unchanged.
 --    web_privileges          what can be granted: view, add, edit and delete per page,
 --                            plus user management
@@ -9,7 +9,10 @@
 --    web_account_privileges  which privileges each account has (bridge table)
 --    web_role_privileges     default privileges for each CRM role (bridge table)
 --    web_audit_log           sign-ins and user-management changes
---  Passwords are stored only as salted scrypt hashes.
+--    web_login_failures      wrong passwords per network address (sign-in throttling)
+--  Passwords are stored only as salted scrypt hashes. Wrong passwords block the
+--  network address they came from, never the account itself, so nobody can lock
+--  other people out of a shared account.
 --  Running it again keeps existing accounts.
 -- =====================================================================
 
@@ -30,8 +33,6 @@ CREATE TABLE IF NOT EXISTS web_accounts (
     password_hash        VARCHAR(255)     NOT NULL                COMMENT 'Salted scrypt hash; the password itself is never stored',
     is_active            BOOLEAN          NOT NULL DEFAULT TRUE   COMMENT 'FALSE blocks sign-in',
     must_change_password BOOLEAN          NOT NULL DEFAULT TRUE   COMMENT 'TRUE until the user replaces a temporary password',
-    failed_logins        TINYINT UNSIGNED NOT NULL DEFAULT 0      COMMENT 'Wrong passwords in a row',
-    locked_until         DATETIME         NULL                    COMMENT 'Sign-in blocked until this time after 5 wrong passwords',
     last_login_at        DATETIME         NULL                    COMMENT 'Last successful sign-in',
     created_at           DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation time',
     PRIMARY KEY (account_id),
@@ -74,6 +75,18 @@ CREATE TABLE IF NOT EXISTS web_audit_log (
                                                      'account_deleted', 'record_added', 'record_updated',
                                                      'record_deleted', 'procedure_called'))
 ) ENGINE = InnoDB COMMENT = 'Sign-ins and user-management changes';
+
+-- 5 wrong passwords for one account from one address, or 20 from one address in
+-- total, block that address for 15 minutes; rows older than a day are deleted
+CREATE TABLE IF NOT EXISTS web_login_failures (
+    failure_id BIGINT      NOT NULL AUTO_INCREMENT COMMENT 'Failed sign-in identifier',
+    ip_address VARCHAR(45) NOT NULL COMMENT 'Network address of the attempt (IPv4 or IPv6)',
+    account_id INT         NULL     COMMENT 'Account that was tried (FK web_accounts); NULL for an unknown user name',
+    failed_at  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When it happened',
+    PRIMARY KEY (failure_id),
+    KEY idx_web_failures_address (ip_address, failed_at),
+    CONSTRAINT fk_web_failures_account FOREIGN KEY (account_id) REFERENCES web_accounts (account_id) ON DELETE CASCADE
+) ENGINE = InnoDB COMMENT = 'Wrong passwords per network address, for sign-in throttling';
 
 
 -- ---------- privileges -----------------------------------------------

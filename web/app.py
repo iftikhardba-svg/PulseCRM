@@ -1,17 +1,19 @@
 """PulseCRM web dashboard: a Flask app on top of the pulse_crm MySQL database.
 
 Visitors sign in with a web account (database/web_access.sql). Each account has privileges
-that decide which pages it may open; accounts with the manage_users privilege create
-accounts, grant privileges and reset passwords on the Users page. Passwords are stored
-only as salted scrypt hashes, forms carry a CSRF token, and five wrong passwords lock an
-account for 15 minutes.
+that decide which pages it may open and which records it may add, edit or delete; accounts
+with the manage_users privilege create accounts, grant privileges and reset passwords on the
+Users page. Passwords are stored only as salted scrypt hashes and forms carry a CSRF token.
+Wrong passwords are throttled per network address: 5 for one account, or 20 in total, block
+that address for 15 minutes, while people elsewhere can still sign in to the same account.
+A Content-Security-Policy lets only this site's own scripts run.
 
 The CRM pages read the reporting views of database/pulse_crm.sql in READ ONLY sessions.
-The MySQL account used by the app (database/web_app_user.sql) can read every table but can
-change only the sign-in tables.
+The MySQL account used by the app (database/web_app_user.sql) connects over TLS only and can
+change the CRM tables (not the stage history) and the sign-in tables, but not the schema.
 
 Environment variables:
-  DATABASE_URL      mysql://user:password@host:port/pulse_crm
+  DATABASE_URL      mysql://user:password@host:port/pulse_crm[?ssl-mode=REQUIRED]
   DATABASE_CA_CERT  PEM text of the server's CA certificate (turns on verified TLS)
   SECRET_KEY        long random string that signs the session cookie (required to sign in)
 """
@@ -60,8 +62,9 @@ TABLES = ["roles", "users", "industries", "accounts", "contacts", "lead_sources"
 
 USERNAME_RULE = re.compile(r"^[a-z0-9._-]{3,40}$")
 MIN_PASSWORD_LENGTH = 10
-MAX_FAILED_LOGINS = 5
-LOCK_MINUTES = 15
+THROTTLE_MINUTES = 15
+MAX_FAILURES_PER_ACCOUNT = 5     # wrong passwords for one account from one network address
+MAX_FAILURES_PER_ADDRESS = 20    # wrong passwords from one network address, for any accounts
 DUMMY_HASH = generate_password_hash("not-a-real-password")   # same work for unknown user names
 
 
@@ -91,8 +94,7 @@ IS_OPEN_TICKET = "CASE WHEN status IN ('Open', 'In Progress') THEN 1 ELSE 0 END"
 # --------------------------------------------------------------------------- sign-in
 ACCOUNT_SQL = """
     SELECT a.account_id, a.username, a.display_name, a.user_id, a.is_active, a.must_change_password,
-           a.last_login_at, a.created_at, a.locked_until > NOW() AS locked,
-           u.full_name AS crm_name, r.role_name,
+           a.last_login_at, a.created_at, u.full_name AS crm_name, r.role_name,
            GROUP_CONCAT(ap.privilege_code) AS privileges
     FROM web_accounts a
     LEFT JOIN users u                  ON a.user_id = u.user_id
@@ -100,7 +102,7 @@ ACCOUNT_SQL = """
     LEFT JOIN web_account_privileges ap ON ap.account_id = a.account_id
     WHERE a.account_id = %s
     GROUP BY a.account_id, a.username, a.display_name, a.user_id, a.is_active, a.must_change_password,
-             a.last_login_at, a.created_at, a.locked_until, u.full_name, r.role_name"""
+             a.last_login_at, a.created_at, u.full_name, r.role_name"""
 
 
 def load_account(account_id):
@@ -124,6 +126,37 @@ def home_endpoint(user):
         if privilege in user["privileges"]:
             return endpoint
     return "account"
+
+
+def client_ip():
+    """The visitor's network address. Vercel's proxy sets X-Real-IP itself, so it cannot be forged there;
+    anywhere else the header is ignored and the address of the direct connection is used."""
+    if os.environ.get("VERCEL"):
+        forwarded = request.headers.get("X-Real-IP") or request.headers.get("X-Forwarded-For", "").split(",")[0]
+        if forwarded.strip():
+            return forwarded.strip()[:45]
+    return (request.remote_addr or "unknown")[:45]
+
+
+def sign_in_blocked(ip, account_id):
+    """True after too many recent wrong passwords from this address: for this account, or for any accounts."""
+    found = rows(f"""SELECT COUNT(*) AS from_address, COALESCE(SUM(account_id = %s), 0) AS for_account
+                     FROM web_login_failures
+                     WHERE ip_address = %s AND failed_at > NOW() - INTERVAL {THROTTLE_MINUTES} MINUTE""",
+                 (account_id, ip))[0]
+    return found["from_address"] >= MAX_FAILURES_PER_ADDRESS or found["for_account"] >= MAX_FAILURES_PER_ACCOUNT
+
+
+def blocked_addresses(account_id=None):
+    """{account_id: [addresses currently blocked for it]}, for one account or for all of them."""
+    blocked = {}
+    for r in rows(f"""SELECT account_id, ip_address FROM web_login_failures
+                      WHERE account_id IS NOT NULL AND (%s IS NULL OR account_id = %s)
+                        AND failed_at > NOW() - INTERVAL {THROTTLE_MINUTES} MINUTE
+                      GROUP BY account_id, ip_address
+                      HAVING COUNT(*) >= {MAX_FAILURES_PER_ACCOUNT}""", (account_id, account_id)):
+        blocked.setdefault(r["account_id"], []).append(r["ip_address"])
+    return blocked
 
 
 def safe_next(target):
@@ -222,8 +255,22 @@ def sign_in_required():
     return None
 
 
+# Scripts run only from <script> tags that carry this response's nonce: no inline event handlers, no
+# other sites. Styles may be inline (the templates use style attributes); images may also come from GitHub.
+CSP = ("default-src 'none'; script-src 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; "
+       "img-src 'self' data: https://raw.githubusercontent.com; form-action 'self'; "
+       "frame-ancestors 'none'; base-uri 'none'")
+
+
+def csp_nonce():
+    if "csp_nonce" not in g:
+        g.csp_nonce = secrets.token_urlsafe(16)
+    return g.csp_nonce
+
+
 @app.after_request
 def security_headers(response):
+    response.headers.setdefault("Content-Security-Policy", CSP.format(nonce=csp_nonce()))
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("Referrer-Policy", "same-origin")
@@ -240,39 +287,32 @@ def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip().lower()
         password = request.form.get("password", "")
-        found = rows("""SELECT account_id, password_hash, is_active, locked_until > NOW() AS locked
-                        FROM web_accounts WHERE username = %s""", (username,))
+        ip = client_ip()
+        found = rows("SELECT account_id, password_hash, is_active FROM web_accounts WHERE username = %s", (username,))
         account = found[0] if found else None
+        account_id = account["account_id"] if account else None
+        if sign_in_blocked(ip, account_id):
+            # the password is not checked at all, so a blocked address learns nothing by guessing
+            error = (f"Too many wrong passwords from your network. Wait up to {THROTTLE_MINUTES} minutes, "
+                     "or ask an administrator to clear the block.")
+            return render_template("login.html", page="login", error=error, username=username), 429
         password_ok = check_password_hash(account["password_hash"] if account else DUMMY_HASH, password)
-        if account and account["locked"]:
-            error = f"Too many wrong passwords. This account is locked for up to {LOCK_MINUTES} minutes."
+        if account and password_ok and account["is_active"]:
             with transaction() as cur:
-                audit(cur, account["account_id"], "login_failed", "account locked")
-        elif account and password_ok and account["is_active"]:
-            with transaction() as cur:
-                cur.execute("""UPDATE web_accounts
-                               SET failed_logins = 0, locked_until = NULL, last_login_at = NOW()
-                               WHERE account_id = %s""", (account["account_id"],))
-                audit(cur, account["account_id"], "login")
+                cur.execute("UPDATE web_accounts SET last_login_at = NOW() WHERE account_id = %s", (account_id,))
+                cur.execute("DELETE FROM web_login_failures WHERE ip_address = %s AND account_id = %s",
+                            (ip, account_id))
+                audit(cur, account_id, "login")
             session.clear()
             session.permanent = True
-            session["account_id"] = account["account_id"]
-            user = load_account(account["account_id"])
+            session["account_id"] = account_id
+            user = load_account(account_id)
             return redirect(safe_next(request.args.get("next")) or url_for(home_endpoint(user)))
-        else:
-            with transaction() as cur:
-                if account:
-                    # the CASE for locked_until reads failed_logins before it is changed on the next line
-                    cur.execute(f"""UPDATE web_accounts
-                                    SET locked_until  = CASE WHEN failed_logins + 1 >= {MAX_FAILED_LOGINS}
-                                                             THEN NOW() + INTERVAL {LOCK_MINUTES} MINUTE
-                                                             ELSE locked_until END,
-                                        failed_logins = CASE WHEN failed_logins + 1 >= {MAX_FAILED_LOGINS}
-                                                             THEN 0 ELSE failed_logins + 1 END
-                                    WHERE account_id = %s""", (account["account_id"],))
-                audit(cur, account["account_id"] if account else None, "login_failed",
-                      None if account else "unknown user name")
-            error = "Wrong user name or password."
+        with transaction() as cur:
+            cur.execute("DELETE FROM web_login_failures WHERE failed_at < NOW() - INTERVAL 1 DAY")
+            cur.execute("INSERT INTO web_login_failures (ip_address, account_id) VALUES (%s, %s)", (ip, account_id))
+            audit(cur, account_id, "login_failed", f"from {ip}" if account else f"unknown user name, from {ip}")
+        error = "Wrong user name or password."
     return render_template("login.html", page="login", error=error, username=username)
 
 
@@ -381,17 +421,18 @@ def users():
         flash(problem, "error")
     accounts = rows("""
         SELECT a.account_id, a.username, a.display_name, a.is_active, a.must_change_password, a.last_login_at,
-               a.locked_until > NOW() AS locked, u.full_name AS crm_name, r.role_name,
-               GROUP_CONCAT(ap.privilege_code) AS codes
+               u.full_name AS crm_name, r.role_name, GROUP_CONCAT(ap.privilege_code) AS codes
         FROM web_accounts a
         LEFT JOIN users u                   ON a.user_id = u.user_id
         LEFT JOIN roles r                   ON u.role_id = r.role_id
         LEFT JOIN web_account_privileges ap ON ap.account_id = a.account_id
         GROUP BY a.account_id, a.username, a.display_name, a.is_active, a.must_change_password, a.last_login_at,
-                 a.locked_until, u.full_name, r.role_name
+                 u.full_name, r.role_name
         ORDER BY a.username""")
+    blocked = blocked_addresses()
     for a in accounts:
         a["privilege_summary"] = privilege_summary(set((a["codes"] or "").split(",")))
+        a["blocked"] = len(blocked.get(a["account_id"], []))
     log = rows("""SELECT l.created_at, a.username, l.action, l.detail
                   FROM web_audit_log l
                   LEFT JOIN web_accounts a ON a.account_id = l.account_id
@@ -445,15 +486,13 @@ def user_edit(account_id):
                     changes += [f"-{c}" for c in sorted(target["privileges"] - chosen)]
                     if active != bool(target["is_active"]):
                         changes.append("activated" if active else "deactivated")
-                    if request.form.get("unlock") == "on":
-                        cur.execute("""UPDATE web_accounts SET failed_logins = 0, locked_until = NULL
-                                       WHERE account_id = %s""", (account_id,))
-                        changes.append("unlocked")
+                    if request.form.get("unlock") == "on" or new_password:
+                        cur.execute("DELETE FROM web_login_failures WHERE account_id = %s", (account_id,))
+                        if cur.rowcount and request.form.get("unlock") == "on":
+                            changes.append("sign-in block cleared")
                     audit(cur, me, "account_updated", f"{target['username']}: {', '.join(changes) or 'details'}")
                     if new_password:
-                        cur.execute("""UPDATE web_accounts
-                                       SET password_hash = %s, must_change_password = TRUE,
-                                           failed_logins = 0, locked_until = NULL
+                        cur.execute("""UPDATE web_accounts SET password_hash = %s, must_change_password = TRUE
                                        WHERE account_id = %s""", (generate_password_hash(new_password), account_id))
                         audit(cur, me, "password_reset", target["username"])
                 flash(f"Account {target['username']} saved.", "ok")
@@ -462,7 +501,8 @@ def user_edit(account_id):
                 problem = "That CRM staff member already has an account."
         flash(problem, "error")
     return render_template("user_edit.html", page="users", target=target, matrix=privilege_matrix(privileges),
-                           staff=crm_staff(account_id), is_self=is_self, checked=target["privileges"])
+                           staff=crm_staff(account_id), is_self=is_self, checked=target["privileges"],
+                           blocked=blocked_addresses(account_id).get(account_id, []))
 
 
 @app.route("/users/<int:account_id>/delete", methods=["POST"])
@@ -780,7 +820,7 @@ def when(value):
 def layout():
     user = g.get("user")
     tabs = [(endpoint, label) for endpoint, label, privilege in NAV if user and privilege in user["privileges"]]
-    return {"nav": tabs, "github": GITHUB, "user": user, "csrf_token": csrf_token, "can": can,
+    return {"nav": tabs, "github": GITHUB, "user": user, "csrf_token": csrf_token, "csp_nonce": csp_nonce, "can": can,
             "segments": crud.SEGMENTS, "privilege_summary": privilege_summary,
             "labels": {endpoint: label for endpoint, label, _ in NAV}}
 

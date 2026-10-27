@@ -5,7 +5,7 @@
 <p><a href="/users">← All users</a></p>
 <h1>Edit <code>{{ target.username }}</code></h1>
 <p class="lead">Created {{ target.created_at|when }} · last sign-in {{ target.last_login_at|when }}
-  {% if target.locked %} · {{ badge('Locked') }} after repeated wrong passwords{% endif %}</p>
+  {% if blocked %} · sign-in blocked from {{ blocked|join(', ') }} after repeated wrong passwords{% endif %}</p>
 
 <div class="card" style="margin-bottom: 18px">
   <form method="post">
@@ -23,8 +23,8 @@
     {% include "_privilege_matrix.html" %}
     <label class="check"><input type="checkbox" name="is_active" {{ 'checked' if target.is_active }}>
       <span>Active <span class="hint">(clear to block sign-in without deleting the account)</span></span></label>
-    {% if target.locked %}
-      <label class="check"><input type="checkbox" name="unlock"><span>Unlock now</span></label>
+    {% if blocked %}
+      <label class="check"><input type="checkbox" name="unlock"><span>Clear the sign-in block now</span></label>
     {% endif %}
     <label for="new_password">Reset password <span class="hint">(optional; a new temporary password, at least 10 characters)</span></label>
     <input type="password" id="new_password" name="new_password" autocomplete="new-password" minlength="10">
@@ -40,7 +40,7 @@
   <h2>Delete account</h2>
   <p class="muted">Removes the account and its privileges. Its entries in the activity log are kept.</p>
   <form method="post" action="/users/{{ target.account_id }}/delete"
-        onsubmit="return confirm('Delete the account {{ target.username }}?');">
+        data-confirm="Delete the account {{ target.username }}?">
     <input type="hidden" name="csrf" value="{{ csrf_token() }}">
     <button class="btn danger" type="submit">Delete {{ target.username }}</button>
   </form>

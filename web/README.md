@@ -32,7 +32,7 @@ Every signed-in user also has **My account**, where they change their password. 
 
 ## Sign-in and privileges
 
-Accounts live in five extra tables, created by [database/web_access.sql](../database/web_access.sql) next to the 18 CRM tables:
+Accounts live in six extra tables, created by [database/web_access.sql](../database/web_access.sql) next to the 18 CRM tables:
 
 | Table | Holds |
 |---|---|
@@ -41,6 +41,7 @@ Accounts live in five extra tables, created by [database/web_access.sql](../data
 | `web_account_privileges` | Which privileges each account has |
 | `web_role_privileges` | Default privileges for each CRM role, filled in when an account is linked to staff |
 | `web_audit_log` | Sign-ins, account changes and record changes |
+| `web_login_failures` | Wrong passwords: network address, account tried and time (kept for one day) |
 
 On the Users page, privileges are a grid: one row per page, with View, Add, Edit and Delete columns. The CRM role defaults are:
 
@@ -53,19 +54,20 @@ On the Users page, privileges are a grid: one row per page, with View, Add, Edit
 | Support Agent | Overview, Accounts, Support | add and edit Support |
 
 - **Passwords:** stored only as salted scrypt hashes. New accounts get a temporary password that must be changed at the first sign-in.
-- **Lockout:** five wrong passwords lock an account for 15 minutes; an administrator can unlock it sooner.
+- **Throttling:** wrong passwords block the network address they came from, never the account. Five for one account, or twenty for any accounts, block that address for up to 15 minutes; people elsewhere can still sign in to the same account. A blocked address is refused without its password being checked, and the Users page shows blocked addresses so an administrator can clear them sooner. On Vercel the address comes from the `X-Real-IP` header that Vercel's proxy sets itself; anywhere else such headers are ignored, because a visitor could forge them.
 - **Forms:** every form carries a CSRF token.
+- **Content-Security-Policy:** scripts run only from `<script>` tags that carry the response's random nonce. There are no inline event handlers, and nothing is loaded from other sites except the ER diagram image from GitHub.
 - **Sessions:** the session cookie is signed with `SECRET_KEY`, is HTTP-only and HTTPS-only, and expires after 8 hours.
 - **Administrators:** they cannot deactivate themselves or remove their own **Manage users** privilege, and the last administrator cannot be removed.
 
 ## Database access
 
-The site connects as `pulse_web` ([database/web_app_user.sql](../database/web_app_user.sql)), which is granted table by table:
+The site connects as `pulse_web` ([database/web_app_user.sql](../database/web_app_user.sql)). It is created with `REQUIRE SSL`, so MySQL refuses it without TLS, and it is granted table by table:
 
 - `SELECT` on every table and view;
 - `INSERT`, `UPDATE` and `DELETE` on the 17 CRM tables. The stage history is excluded: only the trigger and the procedures write to it;
 - `EXECUTE` on `sp_convert_lead`, `sp_update_opportunity_stage` and `sp_record_payment`;
-- writes on `web_accounts`, `web_account_privileges` and `web_audit_log`.
+- writes on `web_accounts`, `web_account_privileges`, `web_audit_log` and `web_login_failures`.
 
 It has no `CREATE`, `ALTER`, `DROP` or `GRANT` rights. Report pages run in `READ ONLY` sessions; changes run in one transaction each.
 
@@ -73,7 +75,7 @@ It has no `CREATE`, `ALTER`, `DROP` or `GRANT` rights. Report pages run in `READ
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | `mysql://pulse_web:<password>@<host>:<port>/pulse_crm` |
+| `DATABASE_URL` | `mysql://pulse_web:<password>@<host>:<port>/pulse_crm`. Without `DATABASE_CA_CERT`, add `?ssl-mode=REQUIRED` for TLS without certificate checks. |
 | `DATABASE_CA_CERT` | The server's CA certificate (PEM text). Turns on verified TLS. |
 | `SECRET_KEY` | A long random string that signs the session cookie. Without it, nobody can sign in. |
 
@@ -105,11 +107,11 @@ flask --app web/app.py run
    It does five things:
    - builds `pulse_crm` with the unchanged build script;
    - adds the sign-in tables;
-   - creates `pulse_web` with its grants, and checks that it cannot change CRM data;
+   - creates `pulse_web` with its grants, and checks that it is refused without TLS and cannot change the stage history or the schema;
    - creates the first administrator, `admin`. Its temporary password goes to `web/.env.admin`, which is git-ignored;
    - writes the three settings to `web/.env.vercel`, which is git-ignored.
 
-   On a database that is already running, `python web/setup_cloud_db.py --keep-data` updates only the sign-in tables, the new privileges (granted to the active administrators) and `pulse_web`'s grants. It keeps the data and `pulse_web`'s password.
+   On a database that is already running, `python web/setup_cloud_db.py --keep-data` updates only the sign-in tables (it also removes the per-account lockout columns of older versions), the new privileges (granted to the active administrators) and `pulse_web`'s rules. It keeps the data and `pulse_web`'s password.
 2. **Website:**
    - In Vercel, import this GitHub repository and set **Root Directory** to `web`.
    - Add the three settings as environment variables.

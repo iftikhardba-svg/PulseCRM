@@ -7,15 +7,19 @@
 --      (never on opportunity_stage_history, the audit trail written by the
 --      trigger and the procedures)
 --    * EXECUTE on the three procedures that change data
---    * writes on the three sign-in tables of database/web_access.sql
---  It has no CREATE, ALTER, DROP or GRANT rights.
+--    * writes on the four sign-in tables of database/web_access.sql that
+--      the application changes
+--  It has no CREATE, ALTER, DROP or GRANT rights, and it may connect only
+--  over TLS (REQUIRE SSL), so its password never crosses the network in
+--  plain text.
 --  Run this as an administrator after database/pulse_crm.sql and
 --  database/web_access.sql, with a strong password of your own. Never
 --  commit the real password. (web/setup_cloud_db.py runs these statements
 --  with a random password.)
 -- =====================================================================
 
-CREATE USER IF NOT EXISTS 'pulse_web'@'%' IDENTIFIED BY 'replace-with-a-strong-password';
+CREATE USER IF NOT EXISTS 'pulse_web'@'%' IDENTIFIED BY 'replace-with-a-strong-password' REQUIRE SSL;
+ALTER USER 'pulse_web'@'%' REQUIRE SSL;   -- also for an account created before this rule
 GRANT SELECT ON pulse_crm.* TO 'pulse_web'@'%';
 
 -- CRM records: add, edit and delete from the dashboard
@@ -46,6 +50,7 @@ GRANT EXECUTE ON PROCEDURE pulse_crm.sp_record_payment TO 'pulse_web'@'%';
 GRANT INSERT, UPDATE, DELETE ON pulse_crm.web_accounts TO 'pulse_web'@'%';
 GRANT INSERT, DELETE ON pulse_crm.web_account_privileges TO 'pulse_web'@'%';
 GRANT INSERT ON pulse_crm.web_audit_log TO 'pulse_web'@'%';
+GRANT INSERT, DELETE ON pulse_crm.web_login_failures TO 'pulse_web'@'%';
 
 -- Check the result
 SHOW GRANTS FOR 'pulse_web'@'%';

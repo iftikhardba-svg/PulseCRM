@@ -328,7 +328,7 @@ Every push to this repository runs the [Docker build](.github/workflows/docker.y
 
 - create accounts, optionally linked to CRM staff, which pre-ticks that role's default privileges;
 - grant privileges in a grid: **View, Add, Edit and Delete** for every page, plus Manage users;
-- reset passwords and unlock accounts;
+- reset passwords and clear sign-in blocks;
 - deactivate or delete accounts;
 - read the log of sign-ins, account changes and record changes.
 
@@ -336,19 +336,19 @@ Every push to this repository runs the [Docker build](.github/workflows/docker.y
 |---|---|
 | Website | Python Flask app in [`web/`](web/README.md), hosted on Vercel |
 | Database | MySQL 8 on Aiven (free plan), built with the unchanged [`database/pulse_crm.sql`](database/pulse_crm.sql) |
-| Sign-in | Accounts, 27 privileges and an audit log in five extra tables ([`database/web_access.sql`](database/web_access.sql)). Passwords are stored as salted scrypt hashes, forms carry CSRF tokens, and five wrong passwords lock an account for 15 minutes |
-| Database access | MySQL account `pulse_web` ([`database/web_app_user.sql`](database/web_app_user.sql)), granted table by table: SELECT everywhere; INSERT, UPDATE and DELETE on the 17 CRM tables; EXECUTE on the three procedures; writes on the sign-in tables. It has no rights on the stage history and no CREATE, ALTER, DROP or GRANT |
+| Sign-in | Accounts, 27 privileges, an audit log and failed sign-ins in six extra tables ([`database/web_access.sql`](database/web_access.sql)). Passwords are stored as salted scrypt hashes and forms carry CSRF tokens. Wrong passwords are throttled per network address: 5 for one account, or 20 in total, block that address for 15 minutes, so nobody can lock other people out of a shared account. A Content-Security-Policy lets only the site's own scripts run |
+| Database access | MySQL account `pulse_web` ([`database/web_app_user.sql`](database/web_app_user.sql)), which may connect only over TLS (REQUIRE SSL) and is granted table by table: SELECT everywhere; INSERT, UPDATE and DELETE on the 17 CRM tables; EXECUTE on the three procedures; writes on the sign-in tables. It has no rights on the stage history and no CREATE, ALTER, DROP or GRANT |
 
 The [Docker build](.github/workflows/docker.yml) workflow tests the dashboard on every push, on MySQL 8.0 and 8.4:
 
-- signing in, wrong passwords and account lockout;
+- signing in, and throttling of wrong passwords per network address (a forged address header does not help);
 - adding, editing and deleting records, including a two-column key;
 - MySQL's refusals (3819, 1062, 1451);
 - the three procedures, with their own refusals;
 - privileges on every route, including a user who may add but not edit or delete;
-- creating, unlocking and deleting accounts;
-- the audit log;
-- the grants of `pulse_web`.
+- creating accounts, clearing sign-in blocks and deleting accounts;
+- the audit log and the Content-Security-Policy;
+- the grants of `pulse_web`, and that it is refused without TLS.
 
 Aiven may switch a free MySQL service off when nobody uses it. When that happens, the site shows a short "database is offline" page until the service is switched back on in the Aiven console. Setup steps are in [web/README.md](web/README.md).
 
