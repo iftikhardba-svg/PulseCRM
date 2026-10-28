@@ -303,7 +303,7 @@ Every push to this repository runs the [Docker build](.github/workflows/docker.y
 
 ## Live Dashboard
 
-**[pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app)** is a CRM website on the database, open to registered users. After signing in, users see the pages their privileges allow: Overview, Pipeline, Accounts (Account 360), Sales Team, Leads, Support, Invoices, and a Database page with live row counts and the ER diagram.
+**[pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app)** is a CRM website on the database, open to registered users. After signing in, users see the pages their privileges allow, in a sidebar that can be collapsed to icons: Overview, Pipeline, Accounts (Account 360), Sales Team, Leads, Marketing (campaigns, audience and lead sources), Support, Invoices, and a Database page with live row counts and the ER diagram.
 
 **Records (DML).** Each page lists its tables, and users with the right privileges can **add, edit and delete** rows in all 17 CRM tables:
 
@@ -312,7 +312,8 @@ Every push to this repository runs the [Docker build](.github/workflows/docker.y
 | Pipeline | deals, deal line items, activities, products, pipeline stages |
 | Accounts | accounts, contacts, industries |
 | Sales Team | CRM staff, roles |
-| Leads | leads, campaigns, campaign members, lead sources |
+| Leads | leads |
+| Marketing | campaigns, campaign members, lead sources |
 | Support | tickets |
 | Invoices | invoices, payments |
 
@@ -336,7 +337,7 @@ Every push to this repository runs the [Docker build](.github/workflows/docker.y
 |---|---|
 | Website | Python Flask app in [`web/`](web/README.md), hosted on Vercel |
 | Database | MySQL 8 on Aiven (free plan), built with the unchanged [`database/pulse_crm.sql`](database/pulse_crm.sql) |
-| Sign-in | Accounts, 27 privileges, an audit log and failed sign-ins in six extra tables ([`database/web_access.sql`](database/web_access.sql)). Passwords are stored as salted scrypt hashes and forms carry CSRF tokens. Wrong passwords are throttled per network address: 5 for one account, or 20 in total, block that address for 15 minutes, so nobody can lock other people out of a shared account. A Content-Security-Policy lets only the site's own scripts run |
+| Sign-in | Accounts, 31 privileges, an audit log and failed sign-ins in six extra tables ([`database/web_access.sql`](database/web_access.sql)). Passwords are stored as salted scrypt hashes and forms carry CSRF tokens. Wrong passwords are throttled per network address: 5 for one account, or 20 in total, block that address for 15 minutes, so nobody can lock other people out of a shared account. A Content-Security-Policy lets only the site's own scripts run |
 | Database access | MySQL account `pulse_web` ([`database/web_app_user.sql`](database/web_app_user.sql)), which may connect only over TLS (REQUIRE SSL) and is granted table by table: SELECT everywhere; INSERT, UPDATE and DELETE on the 17 CRM tables; EXECUTE on the three procedures; writes on the sign-in tables. It has no rights on the stage history and no CREATE, ALTER, DROP or GRANT |
 
 The [Docker build](.github/workflows/docker.yml) workflow tests the dashboard on every push, on MySQL 8.0 and 8.4:

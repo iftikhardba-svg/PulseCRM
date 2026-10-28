@@ -50,11 +50,15 @@ NAV = [
     ("accounts", "Accounts", "view_accounts"),
     ("team", "Sales Team", "view_team"),
     ("leads", "Leads", "view_leads"),
+    ("marketing", "Marketing", "view_marketing"),
     ("support", "Support", "view_support"),
     ("invoices", "Invoices", "view_invoices"),
     ("database", "Database", "view_database"),
     ("users", "Users", "manage_users"),
 ]
+# the heading each page is listed under in the sidebar (Overview has none)
+NAV_GROUP = {"pipeline": "Sales", "accounts": "Sales", "team": "Sales", "leads": "Marketing", "marketing": "Marketing",
+             "support": "Service", "invoices": "Finance", "database": "Admin", "users": "Admin"}
 
 TABLES = ["roles", "users", "industries", "accounts", "contacts", "lead_sources", "leads", "campaigns",
           "campaign_leads", "pipeline_stages", "opportunities", "products", "opportunity_products",
@@ -819,8 +823,16 @@ def when(value):
 @app.context_processor
 def layout():
     user = g.get("user")
-    tabs = [(endpoint, label) for endpoint, label, privilege in NAV if user and privilege in user["privileges"]]
-    return {"nav": tabs, "github": GITHUB, "user": user, "csrf_token": csrf_token, "csp_nonce": csp_nonce, "can": can,
+    # sidebar: [(heading or None, [(endpoint, label), ...]), ...] with only the pages this account may open
+    nav_groups = []
+    for endpoint, label, privilege in NAV:
+        if user and privilege in user["privileges"]:
+            heading = NAV_GROUP.get(endpoint)
+            if not nav_groups or nav_groups[-1][0] != heading:
+                nav_groups.append((heading, []))
+            nav_groups[-1][1].append((endpoint, label))
+    return {"nav_groups": nav_groups, "github": GITHUB, "user": user, "csrf_token": csrf_token,
+            "csp_nonce": csp_nonce, "can": can,
             "segments": crud.SEGMENTS, "privilege_summary": privilege_summary,
             "labels": {endpoint: label for endpoint, label, _ in NAV}}
 
@@ -834,18 +846,20 @@ def percent(part, whole):
     return round(float(part) * 100 / float(whole)) if whole else 0
 
 
-# the sales funnel on the Overview page: each step counts the leads that reached it
+# funnels: each step counts what reached it. Overview: the sales funnel of leads; Marketing: campaign engagement
 FUNNEL = [("leads", "Leads"), ("contacted", "Contacted"), ("qualified", "Qualified"),
           ("converted", "Converted"), ("won", "Won")]
+ENGAGEMENT = [("members", "Reached"), ("opened", "Opened"), ("clicked", "Clicked"),
+              ("responded", "Responded"), ("converted", "Converted")]
 
 
-def funnel_steps(row):
+def funnel_steps(row, steps_def=FUNNEL):
     """One band per step. A band's top edge is as wide as its own count and its bottom edge as wide as the next
-    step's, so the bands join into one funnel; widths run from 40% (no leads) to 100% (all leads)."""
-    counts = [int(row[key] or 0) for key, _ in FUNNEL]
+    step's, so the bands join into one funnel; widths run from 40% (nothing) to 100% (the first step)."""
+    counts = [int(row[key] or 0) for key, _ in steps_def]
     widths = [40 + 60 * count / (counts[0] or 1) for count in counts]
     steps = []
-    for i, (_, label) in enumerate(FUNNEL):
+    for i, (_, label) in enumerate(steps_def):
         top = widths[i]
         bottom = widths[i + 1] if i + 1 < len(widths) else top - 8
         steps.append({"label": label, "count": counts[i],
@@ -998,6 +1012,71 @@ def leads():
     for r in data["statuses"]:
         r["bar"] = share(r["leads"], top)
     return render_template("leads.html", page="leads", **data)
+
+
+MARKETING_TABS = [("campaigns", "Campaigns"), ("audience", "Audience"), ("sources", "Lead sources")]
+CAMPAIGN_STATUS = ("CASE WHEN CURDATE() < c.start_date THEN 'Planned' "
+                   "WHEN CURDATE() > c.end_date THEN 'Completed' ELSE 'Active' END")
+
+
+@app.route("/marketing")
+@requires("view_marketing")
+def marketing():
+    tab = request.args.get("tab", "campaigns")
+    if tab not in dict(MARKETING_TABS):
+        tab = "campaigns"
+    data = fetch(
+        campaigns=f"""
+            SELECT c.campaign_id, c.campaign_name, c.channel, c.start_date, c.end_date, c.budget,
+                   u.full_name AS owner_name, {CAMPAIGN_STATUS} AS status,
+                   COUNT(cl.lead_id)                                              AS members,
+                   COALESCE(SUM(cl.response IN ('Opened', 'Clicked', 'Responded')), 0) AS opened,
+                   COALESCE(SUM(cl.response IN ('Clicked', 'Responded')), 0)       AS clicked,
+                   COALESCE(SUM(cl.response = 'Responded'), 0)                     AS responded,
+                   COALESCE(SUM(l.status = 'Converted'), 0)                        AS converted
+            FROM campaigns c
+            JOIN users u                ON u.user_id = c.owner_user_id
+            LEFT JOIN campaign_leads cl ON cl.campaign_id = c.campaign_id
+            LEFT JOIN leads l           ON l.lead_id = cl.lead_id
+            GROUP BY c.campaign_id, c.campaign_name, c.channel, c.start_date, c.end_date, c.budget, u.full_name
+            ORDER BY c.start_date DESC, c.campaign_id""",
+        audience="""
+            SELECT CONCAT(l.first_name, ' ', l.last_name) AS lead_name, l.company_name, c.campaign_name,
+                   cl.added_on, cl.response, l.status AS lead_status, l.lead_score
+            FROM campaign_leads cl
+            JOIN leads l     ON l.lead_id = cl.lead_id
+            JOIN campaigns c ON c.campaign_id = cl.campaign_id
+            ORDER BY cl.added_on DESC, c.campaign_name, l.last_name""",
+        sources="""
+            SELECT source_name, total_leads, converted_leads, conversion_rate_pct, avg_lead_score
+            FROM vw_lead_conversion_by_source
+            ORDER BY conversion_rate_pct DESC, total_leads DESC, source_name""",
+    )
+    campaigns = data["campaigns"]
+    totals = {key: sum(int(c[key]) for c in campaigns) for key, _ in ENGAGEMENT}
+    budget = sum(float(c["budget"]) for c in campaigns)
+    active = [c for c in campaigns if c["status"] == "Active"]
+    top_budget = max((float(c["budget"]) for c in campaigns), default=0)
+    for c in campaigns:
+        c["bar"] = share(c["budget"], top_budget)
+        c["response_rate"] = percent(c["responded"], c["members"])
+        c["cost_per_member"] = float(c["budget"]) / c["members"] if c["members"] else None
+    top_rate = max((float(r["conversion_rate_pct"] or 0) for r in data["sources"]), default=0)
+    for r in data["sources"]:
+        r["bar"] = share(r["conversion_rate_pct"] or 0, top_rate)
+    summary = {
+        "campaigns": len(campaigns), "active": len(active), "budget": budget,
+        "active_budget": sum(float(c["budget"]) for c in active),
+        "members": totals["members"], "responded": totals["responded"], "converted": totals["converted"],
+    }
+    summary["meter"] = {
+        "campaigns": percent(len(active), len(campaigns)),
+        "budget": percent(summary["active_budget"], budget),
+        "members": percent(totals["responded"], totals["members"]),
+        "converted": percent(totals["converted"], totals["members"]),
+    }
+    return render_template("marketing.html", page="marketing", tab=tab, tabs=MARKETING_TABS, summary=summary,
+                           engagement=funnel_steps(totals, ENGAGEMENT), **data)
 
 
 @app.route("/support")

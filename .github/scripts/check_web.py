@@ -17,7 +17,8 @@ from werkzeug.security import generate_password_hash
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "web"))
-PAGES = ["/", "/pipeline", "/accounts", "/team", "/leads", "/support", "/invoices", "/database"]
+PAGES = ["/", "/pipeline", "/accounts", "/team", "/leads", "/marketing", "/marketing?tab=audience",
+         "/marketing?tab=sources", "/support", "/invoices", "/database"]
 # network addresses used by the throttling tests (documentation ranges, plus the test client's default)
 ADDRESSES = ("127.0.0.1", "198.51.100.7", "203.0.113.20", "192.0.2.99")
 failures = []
@@ -118,7 +119,12 @@ def main():
         r = admin.get(path)
         title = re.search(r"<h1>(.*?)</h1>", r.get_data(as_text=True))
         check(r.status_code == 200, f"{path}: {r.status_code} {title.group(1) if title else ''}")
-    check(">Users</a>" in admin.get("/").get_data(as_text=True), "administrator sees the Users tab")
+    html = admin.get("/").get_data(as_text=True)
+    check('data-nav="users"' in html and 'data-nav="marketing"' in html and 'id="sidebar-toggle"' in html,
+          "administrator sees Users and Marketing in the sidebar, with the menu button")
+    html = admin.get("/marketing").get_data(as_text=True)
+    check("Cloud ERP Webinar 2026" in html and "Campaign engagement" in html and "New campaign" in html
+          and 'href="/data/campaigns"' in html, "Marketing page: campaigns, engagement funnel, records bar")
     html = admin.get("/").get_data(as_text=True)
     steps = re.findall(r'class="band f\d" style="clip-path: polygon\(', html)
     check(html.count('class="card kpi ') == 7 and len(steps) == 5 and "of previous" in html,
@@ -219,6 +225,8 @@ def main():
     check(rep.get("/pipeline").status_code == 200, "ci.rep opens Pipeline (granted)")
     check(rep.get("/invoices").status_code == 403, "ci.rep cannot open Invoices (not granted)")
     check(rep.get("/users").status_code == 403, "ci.rep cannot open Users")
+    check(rep.get("/marketing").status_code == 403 and rep.get("/data/campaigns").status_code == 403,
+          "ci.rep cannot open Marketing or campaign records (not granted)")
     html = rep.get("/data/opportunities").get_data(as_text=True)
     check("Add a record" in html and "/edit" not in html and ">Delete<" not in html,
           "ci.rep sees Add but no Edit or Delete on deals")
@@ -228,8 +236,8 @@ def main():
     check(post(rep, "/pipeline/411/stage", {"stage_name": "Proposal"}).status_code == 403, "ci.rep cannot change stages")
     check(rep.get("/data/accounts").status_code == 403, "ci.rep cannot open account records")
     html = rep.get("/").get_data(as_text=True)
-    check(">Pipeline</a>" in html and ">Invoices</a>" not in html and ">Users</a>" not in html,
-          "ci.rep sees only the granted tabs")
+    check('data-nav="pipeline"' in html and 'data-nav="invoices"' not in html and 'data-nav="users"' not in html
+          and 'data-nav="marketing"' not in html, "ci.rep sees only the granted pages in the sidebar")
 
     print("== Throttling per network address")
     prankster = web.app.test_client()

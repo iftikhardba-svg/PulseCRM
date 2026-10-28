@@ -4,17 +4,20 @@ A CRM website for the `pulse_crm` database, written in Python with Flask and hos
 
 | Page | Report source | Tables (add, edit, delete) |
 |---|---|---|
-| Overview | KPIs, pipeline by stage, leads by source, top accounts | none |
+| Overview | KPI cards, pipeline by stage, sales funnel, top accounts | none |
 | Pipeline | `vw_sales_pipeline` | deals, deal line items, activities, products, pipeline stages; stage history read-only |
 | Accounts | `vw_account_360` | accounts, contacts, industries |
 | Sales Team | `vw_sales_rep_performance` | CRM staff (`users`), roles |
-| Leads | `vw_lead_conversion_by_source`, `leads` | leads, campaigns, campaign members, lead sources |
+| Leads | `vw_lead_conversion_by_source`, `leads` | leads |
+| Marketing | campaigns with reach, responses, conversions and cost per lead; campaign members; lead sources | campaigns, campaign members, lead sources |
 | Support | `vw_ticket_resolution` | tickets |
 | Invoices | `vw_invoice_balance` | invoices, payments |
 | Database | Row counts of all 18 tables, ER diagram, integrity rules | none |
 | Users | Accounts, privileges and the activity log | web accounts |
 
 Every signed-in user also has **My account**, where they change their password. `/health` is public and returns the database name, MySQL version and account count as JSON.
+
+**Sidebar:** the pages are listed in a sidebar on the left, grouped under Sales, Marketing, Service, Finance and Admin, showing only the pages the account may open. The menu button at the top left hides the sidebar down to its icons (page names become tooltips) and shows it again; the choice is remembered in the browser. On a phone the sidebar is a drawer that the same button slides over the page.
 
 **Light and dark mode:** the moon/sun button at the top right of every page switches the theme. The choice is remembered in the browser; until someone chooses, the site follows the system setting. All colours are CSS variables in `templates/base.html`, with a second set for `[data-theme="dark"]`.
 
@@ -38,7 +41,7 @@ Accounts live in six extra tables, created by [database/web_access.sql](../datab
 
 | Table | Holds |
 |---|---|
-| `web_privileges` | 27 privileges: `view_`, `add_`, `edit_` and `delete_` for each page, and `manage_users` |
+| `web_privileges` | 31 privileges: `view_`, `add_`, `edit_` and `delete_` for each page, and `manage_users` |
 | `web_accounts` | User name, name, optional link to a CRM staff member (`users`), password hash, status |
 | `web_account_privileges` | Which privileges each account has |
 | `web_role_privileges` | Default privileges for each CRM role, filled in when an account is linked to staff |
@@ -50,9 +53,9 @@ On the Users page, privileges are a grid: one row per page, with View, Add, Edit
 | Role | Pages | Can change |
 |---|---|---|
 | Administrator | all | everything |
-| Sales Manager | Overview, Pipeline, Accounts, Sales Team, Leads, Invoices | add, edit and delete Pipeline, Accounts and Leads; add and edit Invoices |
+| Sales Manager | Overview, Pipeline, Accounts, Sales Team, Leads, Marketing, Invoices | add, edit and delete Pipeline, Accounts and Leads; add and edit Invoices |
 | Sales Representative | Overview, Pipeline, Accounts, Leads | add and edit Pipeline, Accounts and Leads |
-| Marketing | Overview, Leads | add and edit Leads |
+| Marketing | Overview, Leads, Marketing | add and edit Leads; add, edit and delete Marketing |
 | Support Agent | Overview, Accounts, Support | add and edit Support |
 
 - **Passwords:** stored only as salted scrypt hashes. New accounts get a temporary password that must be changed at the first sign-in.

@@ -122,6 +122,16 @@ INSERT IGNORE INTO web_privileges (privilege_code, privilege_name, description, 
 ('edit_invoices',   'Invoices: edit',     'Edit invoices and payments',                                   26),
 ('delete_invoices', 'Invoices: delete',   'Delete invoices and payments',                                 27);
 
+-- the Marketing page: campaigns, campaign members and lead sources (until 2026-10 part of Leads)
+INSERT IGNORE INTO web_privileges (privilege_code, privilege_name, description, sort_order) VALUES
+('view_marketing',   'Marketing',          'Campaign results, audience and lead sources',                  28),
+('add_marketing',    'Marketing: add',     'Add campaigns, campaign members and lead sources',             29),
+('edit_marketing',   'Marketing: edit',    'Edit campaigns, campaign members and lead sources',            30),
+('delete_marketing', 'Marketing: delete',  'Delete campaigns, campaign members and lead sources',          31);
+UPDATE web_privileges SET description = 'Add leads'                          WHERE privilege_code = 'add_leads';
+UPDATE web_privileges SET description = 'Edit leads and convert qualified leads' WHERE privilege_code = 'edit_leads';
+UPDATE web_privileges SET description = 'Delete leads'                       WHERE privilege_code = 'delete_leads';
+
 -- ---------- default privileges for each CRM role ---------------------
 INSERT IGNORE INTO web_role_privileges (role_id, privilege_code)
 SELECT r.role_id, p.privilege_code
@@ -131,11 +141,13 @@ JOIN web_privileges p
   OR (r.role_name = 'Sales Manager'
       AND p.privilege_code IN ('view_overview', 'view_pipeline', 'view_accounts', 'view_team', 'view_leads', 'view_invoices',
                                'add_pipeline', 'edit_pipeline', 'delete_pipeline', 'add_accounts', 'edit_accounts',
-                               'delete_accounts', 'add_leads', 'edit_leads', 'delete_leads', 'add_invoices', 'edit_invoices'))
+                               'delete_accounts', 'add_leads', 'edit_leads', 'delete_leads', 'add_invoices', 'edit_invoices',
+                               'view_marketing'))
   OR (r.role_name = 'Sales Representative'
       AND p.privilege_code IN ('view_overview', 'view_pipeline', 'view_accounts', 'view_leads',
                                'add_pipeline', 'edit_pipeline', 'add_accounts', 'edit_accounts', 'add_leads', 'edit_leads'))
   OR (r.role_name = 'Marketing'
-      AND p.privilege_code IN ('view_overview', 'view_leads', 'add_leads', 'edit_leads'))
+      AND p.privilege_code IN ('view_overview', 'view_leads', 'add_leads', 'edit_leads',
+                               'view_marketing', 'add_marketing', 'edit_marketing', 'delete_marketing'))
   OR (r.role_name = 'Support Agent'
       AND p.privilege_code IN ('view_overview', 'view_accounts', 'view_support', 'add_support', 'edit_support'));

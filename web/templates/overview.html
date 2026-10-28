@@ -1,19 +1,6 @@
 {% extends "base.html" %}
-{% from "_macros.html" import badge %}
+{% from "_macros.html" import badge, kpi_card, funnel as funnel_chart %}
 {% block title %}Overview{% endblock %}
-{# a KPI card; the caller supplies the icon's SVG shapes, and the meter shows what share of the whole the figure is #}
-{% macro kpi_card(tone, label, value, meter, note, unit='') -%}
-  <div class="card kpi {{ tone }}">
-    <div class="kpi-head">
-      <span class="kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true">{{ caller() }}</svg></span>
-      <span class="label">{{ label }}</span>
-    </div>
-    <div class="value">{% if unit %}<span class="unit">{{ unit }}</span>{% endif %}{{ value }}</div>
-    <div class="meter" aria-hidden="true"><span style="width: {{ meter }}%"></span></div>
-    <div class="note">{{ note }}</div>
-  </div>
-{%- endmacro %}
-
 {% block content %}
 <h1>Sales and service overview</h1>
 <p class="lead">Live figures from the <code>pulse_crm</code> MySQL database. Every number on this site is the result of a
@@ -63,15 +50,7 @@
   </div>
   <div class="card">
     <h2>Sales funnel</h2>
-    <div class="funnel">
-      {% for s in funnel %}
-        <div class="step">
-          <div class="band f{{ loop.index }}" style="clip-path: {{ s.clip }}">{{ s.label }}</div>
-          <div class="stat"><strong>{{ s.count }}</strong>
-            <span>{% if loop.first %}all leads{% else %}{{ s.of_previous }}% of previous{% endif %}</span></div>
-        </div>
-      {% endfor %}
-    </div>
+    {{ funnel_chart(funnel, 'all leads') }}
     <div class="funnel-foot">
       <span>{{ won_share }}% of leads became won deals{% if best_source %}; best source
         {{ best_source.source_name }} ({{ best_source.conversion_rate_pct|pct }} converted){% endif %}</span>

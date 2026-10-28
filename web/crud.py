@@ -19,8 +19,8 @@ SEGMENTS = {
                  ("opportunity_stage_history", "Stage history")],
     "accounts": [("accounts", "Accounts"), ("contacts", "Contacts"), ("industries", "Industries")],
     "team": [("users", "CRM staff"), ("roles", "Roles")],
-    "leads": [("leads", "Leads"), ("campaigns", "Campaigns"), ("campaign_leads", "Campaign members"),
-              ("lead_sources", "Lead sources")],
+    "leads": [("leads", "Leads")],
+    "marketing": [("campaigns", "Campaigns"), ("campaign_leads", "Campaign members"), ("lead_sources", "Lead sources")],
     "support": [("tickets", "Tickets")],
     "invoices": [("invoices", "Invoices"), ("payments", "Payments")],
 }

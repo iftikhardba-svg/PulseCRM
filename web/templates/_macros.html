@@ -1,3 +1,49 @@
 {% macro badge(text) -%}
   <span class="badge b-{{ text|lower|replace(' ', '-') }}">{{ text }}</span>
 {%- endmacro %}
+
+{# a KPI card; the caller supplies the icon's SVG shapes, and the meter shows what share of the whole the figure is #}
+{% macro kpi_card(tone, label, value, meter, note, unit='') -%}
+  <div class="card kpi {{ tone }}">
+    <div class="kpi-head">
+      <span class="kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true">{{ caller() }}</svg></span>
+      <span class="label">{{ label }}</span>
+    </div>
+    <div class="value">{% if unit %}<span class="unit">{{ unit }}</span>{% endif %}{{ value }}</div>
+    <div class="meter" aria-hidden="true"><span style="width: {{ meter }}%"></span></div>
+    <div class="note">{{ note }}</div>
+  </div>
+{%- endmacro %}
+
+{# a funnel of joined bands (steps from app.funnel_steps); first_note describes the first step #}
+{% macro funnel(steps, first_note) -%}
+  <div class="funnel">
+    {% for s in steps %}
+      <div class="step">
+        <div class="band f{{ loop.index }}" style="clip-path: {{ s.clip }}">{{ s.label }}</div>
+        <div class="stat"><strong>{{ s.count }}</strong>
+          <span>{% if loop.first %}{{ first_note }}{% else %}{{ s.of_previous }}% of previous{% endif %}</span></div>
+      </div>
+    {% endfor %}
+  </div>
+{%- endmacro %}
+
+{# line icons for the sidebar and buttons (24 x 24, drawn with the current text colour) #}
+{% macro icon(name) -%}
+  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+  {%- if name == 'overview' -%}<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
+  {%- elif name == 'pipeline' -%}<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/>
+  {%- elif name == 'accounts' -%}<path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M15 9h3a2 2 0 0 1 2 2v10M3 21h18M8 7h3M8 11h3M8 15h3"/>
+  {%- elif name == 'team' -%}<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>
+  {%- elif name == 'leads' -%}<circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 11-3.3"/><path d="M19 14v6M16 17h6"/>
+  {%- elif name == 'marketing' -%}<path d="M3 11v3a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 8.5a5 5 0 0 1 0 7M20 6a8.5 8.5 0 0 1 0 12"/>
+  {%- elif name == 'support' -%}<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M5.6 5.6l3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9"/>
+  {%- elif name == 'invoices' -%}<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>
+  {%- elif name == 'database' -%}<ellipse cx="12" cy="5.5" rx="7.5" ry="2.5"/><path d="M4.5 5.5v13c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-13M4.5 12c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5"/>
+  {%- elif name == 'users' -%}<path d="M12 3l7.5 3v5c0 4.6-3.2 8.6-7.5 10-4.3-1.4-7.5-5.4-7.5-10V6z"/><path d="M9 12l2 2 4-4"/>
+  {%- elif name == 'github' -%}<path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/>
+  {%- elif name == 'panel' -%}<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>
+  {%- elif name == 'plus' -%}<path d="M12 5v14M5 12h14"/>
+  {%- endif -%}
+  </svg>
+{%- endmacro %}

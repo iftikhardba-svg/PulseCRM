@@ -135,6 +135,14 @@ def main():
                             JOIN web_privileges p ON p.privilege_code IN ({', '.join(['%s'] * len(added))})
                             WHERE a.is_active = TRUE""", added)
             print(f"   {len(added)} new privileges, granted to every active administrator ({cur.rowcount} grants)")
+        if "view_marketing" in added:
+            # campaigns, campaign members and lead sources moved from the Leads page to the new Marketing page;
+            # every account keeps the rights it had on them
+            cur.execute("""INSERT IGNORE INTO web_account_privileges (account_id, privilege_code)
+                           SELECT account_id, REPLACE(privilege_code, '_leads', '_marketing')
+                           FROM web_account_privileges
+                           WHERE privilege_code IN ('view_leads', 'add_leads', 'edit_leads', 'delete_leads')""")
+            print(f"   Marketing page: {cur.rowcount} privileges copied from the matching Leads privileges")
         # wrong passwords are now throttled per network address (web_login_failures), not per account
         cur.execute("""SELECT column_name FROM information_schema.columns
                        WHERE table_schema = 'pulse_crm' AND table_name = 'web_accounts'
