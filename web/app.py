@@ -17,6 +17,7 @@ Environment variables:
   DATABASE_CA_CERT  PEM text of the server's CA certificate (turns on verified TLS)
   SECRET_KEY        long random string that signs the session cookie (required to sign in)
 """
+import math
 import os
 import re
 import secrets
@@ -846,6 +847,31 @@ def percent(part, whole):
     return round(float(part) * 100 / float(whole)) if whole else 0
 
 
+# the CHECK list of leads.status, in pipeline order; each status keeps its colour slot (s1 to s5) on the pie
+LEAD_STATUSES = ["New", "Contacted", "Qualified", "Unqualified", "Converted"]
+
+
+def pie_slices(counts, order):
+    """SVG paths of a pie of radius 90 around (100, 100), clockwise from the top, one per category with a count.
+    A category's colour slot is its place in `order`, so colours follow the category, never its size."""
+    total = sum(counts.values())
+    slices, start = [], -math.pi / 2
+    for slot, name in enumerate(order, 1):
+        count = counts.get(name, 0)
+        if not count:
+            continue
+        if count == total:   # a single category fills the circle: two half arcs
+            path = "M100 10 A90 90 0 1 1 100 190 A90 90 0 1 1 100 10 Z"
+        else:
+            end = start + 2 * math.pi * count / total
+            path = "M100 100 L{:.2f} {:.2f} A90 90 0 {} 1 {:.2f} {:.2f} Z".format(
+                100 + 90 * math.cos(start), 100 + 90 * math.sin(start), int(end - start > math.pi),
+                100 + 90 * math.cos(end), 100 + 90 * math.sin(end))
+            start = end
+        slices.append({"name": name, "count": count, "pct": percent(count, total), "slot": slot, "path": path})
+    return slices
+
+
 # funnels: each step counts what reached it. Dashboard: the sales funnel of leads; Marketing: campaign engagement
 FUNNEL = [("leads", "Leads"), ("contacted", "Contacted"), ("qualified", "Qualified"),
           ("converted", "Converted"), ("won", "Won")]
@@ -1008,10 +1034,9 @@ def leads():
             ORDER BY l.lead_score DESC, l.lead_id
             LIMIT 10""",
     )
-    top = max((r["leads"] for r in data["statuses"]), default=0)
-    for r in data["statuses"]:
-        r["bar"] = share(r["leads"], top)
-    return render_template("leads.html", page="leads", **data)
+    counts = {r["status"]: int(r["leads"]) for r in data.pop("statuses")}
+    return render_template("leads.html", page="leads", status_pie=pie_slices(counts, LEAD_STATUSES),
+                           status_total=sum(counts.values()), **data)
 
 
 MARKETING_TABS = [("campaigns", "Campaigns"), ("audience", "Audience"), ("sources", "Lead sources")]

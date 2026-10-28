@@ -11,14 +11,18 @@
 <div class="grid two">
   <div class="card">
     <h2>Leads by status</h2>
-    <div class="bars">
-      {% for r in statuses %}
-        <div class="row">
-          <div>{{ badge(r.status) }}</div>
-          <div class="track"><div class="fill" style="width: {{ r.bar }}%"></div></div>
-          <div class="val">{{ r.leads }}</div>
-        </div>
-      {% endfor %}
+    <div class="pie-wrap">
+      <svg class="pie" viewBox="0 0 200 200" role="img"
+           aria-label="Leads by status: {% for s in status_pie %}{{ s.name }} {{ s.count }} ({{ s.pct }}%){{ ', ' if not loop.last }}{% endfor %}">
+        {% for s in status_pie %}<path class="s{{ s.slot }}" d="{{ s.path }}"><title>{{ s.name }}: {{ s.count }} leads ({{ s.pct }}%)</title></path>{% endfor %}
+      </svg>
+      <ul class="pie-legend">
+        {% for s in status_pie %}
+          <li><span class="swatch s{{ s.slot }}"></span><span>{{ s.name }}</span>
+            <span class="count">{{ s.count }}</span><span class="pct">{{ s.pct }}%</span></li>
+        {% endfor %}
+        <li class="total"><span></span><span>All leads</span><span class="count">{{ status_total }}</span><span class="pct">100%</span></li>
+      </ul>
     </div>
   </div>
   <div class="card">

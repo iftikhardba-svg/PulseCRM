@@ -131,6 +131,10 @@ def main():
     check(html.count('class="card kpi ') == 7 and len(steps) == 5 and "of previous" in html,
           f"Dashboard shows 7 KPI cards and a 5-step sales funnel ({len(steps)} steps)")
     check(">Dashboard</span>" in html and "<h1>Dashboard</h1>" in html, "the first page is called Dashboard")
+    html = admin.get("/leads").get_data(as_text=True)
+    slices = re.findall(r'<path class="s(\d)" d="M100 100 L', html)
+    check('class="pie"' in html and slices == ["1", "2", "3", "4", "5"] and ">24</span>" in html,
+          f"Leads page: pie of the 5 lead statuses in fixed colour order ({slices}) with a total of 24")
     for path in ["/users", f"/users/{admin_id}", "/data/accounts", "/"]:
         r = admin.get(path)
         html = r.get_data(as_text=True)
