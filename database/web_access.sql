@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS web_login_failures (
 
 -- ---------- privileges -----------------------------------------------
 INSERT IGNORE INTO web_privileges (privilege_code, privilege_name, description, sort_order) VALUES
-('view_overview', 'Overview',     'KPIs, pipeline by stage, leads by source and top accounts', 1),
+('view_overview', 'Dashboard',    'KPI cards, pipeline by stage, sales funnel and top accounts', 1),
 ('view_pipeline', 'Pipeline',     'Open and closed deals with weighted values',                2),
 ('view_accounts', 'Accounts',     'Account 360 view of every company',                         3),
 ('view_team',     'Sales Team',   'Sales representative scorecard',                            4),
@@ -131,6 +131,10 @@ INSERT IGNORE INTO web_privileges (privilege_code, privilege_name, description, 
 UPDATE web_privileges SET description = 'Add leads'                          WHERE privilege_code = 'add_leads';
 UPDATE web_privileges SET description = 'Edit leads and convert qualified leads' WHERE privilege_code = 'edit_leads';
 UPDATE web_privileges SET description = 'Delete leads'                       WHERE privilege_code = 'delete_leads';
+-- the Overview page is called Dashboard since 2026-10
+UPDATE web_privileges SET privilege_name = 'Dashboard',
+                          description = 'KPI cards, pipeline by stage, sales funnel and top accounts'
+WHERE privilege_code = 'view_overview';
 
 -- ---------- default privileges for each CRM role ---------------------
 INSERT IGNORE INTO web_role_privileges (role_id, privilege_code)

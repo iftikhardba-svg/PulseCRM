@@ -45,7 +45,7 @@ ERD_IMAGE = "https://raw.githubusercontent.com/iftikhardba-svg/PulseCRM/main/doc
 
 # (endpoint, tab label, privilege needed to open it)
 NAV = [
-    ("overview", "Overview", "view_overview"),
+    ("overview", "Dashboard", "view_overview"),
     ("pipeline", "Pipeline", "view_pipeline"),
     ("accounts", "Accounts", "view_accounts"),
     ("team", "Sales Team", "view_team"),
@@ -56,7 +56,7 @@ NAV = [
     ("database", "Database", "view_database"),
     ("users", "Users", "manage_users"),
 ]
-# the heading each page is listed under in the sidebar (Overview has none)
+# the heading each page is listed under in the sidebar (Dashboard has none)
 NAV_GROUP = {"pipeline": "Sales", "accounts": "Sales", "team": "Sales", "leads": "Marketing", "marketing": "Marketing",
              "support": "Service", "invoices": "Finance", "database": "Admin", "users": "Admin"}
 
@@ -215,7 +215,7 @@ def privilege_matrix(privileges):
 
 
 def privilege_summary(codes):
-    """'Overview · Pipeline (view, add, edit) · Users' for a set of privilege codes."""
+    """'Dashboard · Pipeline (view, add, edit) · Users' for a set of privilege codes."""
     parts = []
     for segment, label, _ in NAV:
         if segment == "users":
@@ -846,7 +846,7 @@ def percent(part, whole):
     return round(float(part) * 100 / float(whole)) if whole else 0
 
 
-# funnels: each step counts what reached it. Overview: the sales funnel of leads; Marketing: campaign engagement
+# funnels: each step counts what reached it. Dashboard: the sales funnel of leads; Marketing: campaign engagement
 FUNNEL = [("leads", "Leads"), ("contacted", "Contacted"), ("qualified", "Qualified"),
           ("converted", "Converted"), ("won", "Won")]
 ENGAGEMENT = [("members", "Reached"), ("opened", "Opened"), ("clicked", "Clicked"),

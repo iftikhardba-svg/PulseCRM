@@ -4,7 +4,7 @@ A CRM website for the `pulse_crm` database, written in Python with Flask and hos
 
 | Page | Report source | Tables (add, edit, delete) |
 |---|---|---|
-| Overview | KPI cards, pipeline by stage, sales funnel, top accounts | none |
+| Dashboard | KPI cards, pipeline by stage, sales funnel, top accounts | none |
 | Pipeline | `vw_sales_pipeline` | deals, deal line items, activities, products, pipeline stages; stage history read-only |
 | Accounts | `vw_account_360` | accounts, contacts, industries |
 | Sales Team | `vw_sales_rep_performance` | CRM staff (`users`), roles |
@@ -53,10 +53,10 @@ On the Users page, privileges are a grid: one row per page, with View, Add, Edit
 | Role | Pages | Can change |
 |---|---|---|
 | Administrator | all | everything |
-| Sales Manager | Overview, Pipeline, Accounts, Sales Team, Leads, Marketing, Invoices | add, edit and delete Pipeline, Accounts and Leads; add and edit Invoices |
-| Sales Representative | Overview, Pipeline, Accounts, Leads | add and edit Pipeline, Accounts and Leads |
-| Marketing | Overview, Leads, Marketing | add and edit Leads; add, edit and delete Marketing |
-| Support Agent | Overview, Accounts, Support | add and edit Support |
+| Sales Manager | Dashboard, Pipeline, Accounts, Sales Team, Leads, Marketing, Invoices | add, edit and delete Pipeline, Accounts and Leads; add and edit Invoices |
+| Sales Representative | Dashboard, Pipeline, Accounts, Leads | add and edit Pipeline, Accounts and Leads |
+| Marketing | Dashboard, Leads, Marketing | add and edit Leads; add, edit and delete Marketing |
+| Support Agent | Dashboard, Accounts, Support | add and edit Support |
 
 - **Passwords:** stored only as salted scrypt hashes. New accounts get a temporary password that must be changed at the first sign-in.
 - **Throttling:** wrong passwords block the network address they came from, never the account. Five for one account, or twenty for any accounts, block that address for up to 15 minutes; people elsewhere can still sign in to the same account. A blocked address is refused without its password being checked, and the Users page shows blocked addresses so an administrator can clear them sooner. On Vercel the address comes from the `X-Real-IP` header that Vercel's proxy sets itself; anywhere else such headers are ignored, because a visitor could forge them.

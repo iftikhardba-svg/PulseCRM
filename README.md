@@ -11,7 +11,9 @@ PulseCRM stores everything a B2B sales and service team needs: leads, accounts, 
 
 > Final project for **Relational Database Management Systems (RDBMS)**, Postgraduate Diploma in Generative AI, NED University of Engineering & Technology, Karachi.
 
-**Live dashboard:** [pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app), a reporting site on the sample data with sign-in and user management (Vercel + MySQL).
+**Live web application:** [pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app). No account? [Take the tour](#live-web-application) to see every page.
+
+![PulseCRM dashboard: KPI cards, pipeline by stage and sales funnel](<docs/screenshots/web/dashboard.png>)
 
 ---
 
@@ -20,13 +22,13 @@ PulseCRM stores everything a B2B sales and service team needs: leads, accounts, 
 - [Project Information](#project-information)
 - [Problem Statement](#problem-statement)
 - [Key Features](#key-features)
+- [Live Web Application](#live-web-application)
 - [Database at a Glance](#database-at-a-glance)
 - [Entity Relationship Diagram](#entity-relationship-diagram)
 - [Tables](#tables)
 - [Repository Structure](#repository-structure)
 - [Getting Started](#getting-started)
 - [Run with Docker](#run-with-docker)
-- [Live Dashboard](#live-dashboard)
 - [Views, Procedures and Trigger](#views-procedures-and-trigger)
 - [Sample Results](#sample-results)
 - [Data Integrity Tests](#data-integrity-tests)
@@ -78,6 +80,99 @@ PulseCRM replaces those scattered sources with **one normalized relational datab
 - **Billing**: one invoice per won deal, part payments, and status that follows the money received.
 - **Reporting**: six views (Account 360, sales scorecard, lead conversion, pipeline, support and invoice balance).
 - **Data integrity**: 18 primary keys, 31 foreign keys, 14 unique keys and 34 CHECK constraints.
+
+## Live Web Application
+
+**[pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app)** runs PulseCRM in the browser on the sample data. Signing in needs an account from an administrator, so this tour shows every part of the site for visitors who cannot sign in. All companies, people and figures are fictional.
+
+### Sign-in page
+
+The first page every visitor sees. There is no public sign-up: an administrator creates each account and decides what it may see and change.
+
+<p align="center"><img src="docs/screenshots/web/sign-in.png" alt="PulseCRM sign-in page" width="80%"></p>
+
+### Dashboard
+
+The pages a person may open are listed in the sidebar on the left, grouped under Sales, Marketing, Service, Finance and Admin. The Dashboard shows seven KPI cards, each with a bar for a share of the whole (open deals, win rate, unpaid share and so on), the pipeline by stage, a **sales funnel** from lead to won deal, and the top accounts.
+
+![PulseCRM dashboard](<docs/screenshots/web/dashboard.png>)
+
+### Dark mode and a collapsible sidebar
+
+The moon/sun button switches between light and dark mode. The menu button at the top left collapses the sidebar to its icons, like a side panel, and expands it again; on a phone the sidebar slides in as a drawer.
+
+![Dashboard in dark mode with the sidebar collapsed](<docs/screenshots/web/dashboard-dark.png>)
+
+### Marketing
+
+Campaigns with their budget, reach, responses, conversions and cost per lead, an engagement funnel, the leads each campaign reached, and the conversion rate of each lead source.
+
+![Marketing page](<docs/screenshots/web/marketing.png>)
+
+### Add, edit and delete records
+
+Every page links to its tables. People with the right privileges add, edit and delete rows, and **MySQL has the last word**: when a change breaks a rule, the form shows MySQL's own error, here error 3819 from the `chk_accounts_employees` CHECK constraint.
+
+| Records with Edit and Delete | A CHECK constraint refusing a value (dark mode) |
+|---|---|
+| ![Products table](<docs/screenshots/web/records.png>) | ![MySQL error 3819 on the add-account form](<docs/screenshots/web/check-error.png>) |
+
+### Users and privileges
+
+Administrators create accounts and grant privileges in a grid: View, Add, Edit and Delete for every page. An account linked to a CRM staff member starts with the defaults of that person's role, here a sales representative.
+
+![Privilege grid of a user account](<docs/screenshots/web/users.png>)
+
+### Features
+
+**Records (DML).** Each page lists its tables, and users with the right privileges can **add, edit and delete** rows in all 17 CRM tables:
+
+| Page | Tables |
+|---|---|
+| Pipeline | deals, deal line items, activities, products, pipeline stages |
+| Accounts | accounts, contacts, industries |
+| Sales Team | CRM staff, roles |
+| Leads | leads |
+| Marketing | campaigns, campaign members, lead sources |
+| Support | tickets |
+| Invoices | invoices, payments |
+
+- **Forms** are generated from MySQL's own metadata (`information_schema`): types, required columns, foreign-key dropdowns and the value lists of `CHECK ... IN` rules.
+- **MySQL enforces every rule.** A change that breaks one shows MySQL's own error, such as 3819 for a CHECK, 1062 for a duplicate or 1451 for a row that others still reference.
+- **Three operations** run through the stored procedures:
+  - **Convert lead** (`sp_convert_lead`);
+  - **Change deal stage** (`sp_update_opportunity_stage`; the trigger records which CRM user moved the deal);
+  - **Record payment** (`sp_record_payment`).
+- **The stage history stays read-only.**
+
+**User management.** Administrators get a **Users** tab, where they can:
+
+- create accounts, optionally linked to CRM staff, which pre-ticks that role's default privileges;
+- grant privileges in a grid: **View, Add, Edit and Delete** for every page, plus Manage users;
+- reset passwords and clear sign-in blocks;
+- deactivate or delete accounts;
+- read the log of sign-ins, account changes and record changes.
+
+| Part | Technology |
+|---|---|
+| Website | Python Flask app in [`web/`](web/README.md), hosted on Vercel |
+| Database | MySQL 8 on Aiven (free plan), built with the unchanged [`database/pulse_crm.sql`](database/pulse_crm.sql) |
+| Sign-in | Accounts, 31 privileges, an audit log and failed sign-ins in six extra tables ([`database/web_access.sql`](database/web_access.sql)). Passwords are stored as salted scrypt hashes and forms carry CSRF tokens. Wrong passwords are throttled per network address: 5 for one account, or 20 in total, block that address for 15 minutes, so nobody can lock other people out of a shared account. A Content-Security-Policy lets only the site's own scripts run |
+| Database access | MySQL account `pulse_web` ([`database/web_app_user.sql`](database/web_app_user.sql)), which may connect only over TLS (REQUIRE SSL) and is granted table by table: SELECT everywhere; INSERT, UPDATE and DELETE on the 17 CRM tables; EXECUTE on the three procedures; writes on the sign-in tables. It has no rights on the stage history and no CREATE, ALTER, DROP or GRANT |
+
+The [Docker build](.github/workflows/docker.yml) workflow tests the web application on every push, on MySQL 8.0 and 8.4:
+
+- signing in, and throttling of wrong passwords per network address (a forged address header does not help);
+- adding, editing and deleting records, including a two-column key;
+- MySQL's refusals (3819, 1062, 1451);
+- the three procedures, with their own refusals;
+- privileges on every route, including a user who may add but not edit or delete;
+- creating accounts, clearing sign-in blocks and deleting accounts;
+- the audit log and the Content-Security-Policy;
+- the grants of `pulse_web`, and that it is refused without TLS.
+
+Aiven may switch a free MySQL service off when nobody uses it. To prevent that, the [Keep the database awake](.github/workflows/keep-alive.yml) workflow queries the database through `/health` every hour. If the service is switched off anyway, the site shows a short "database is offline" page, the workflow fails and GitHub e-mails the owner, who switches it back on in the Aiven console. Setup steps are in [web/README.md](web/README.md).
+
 
 ---
 
@@ -188,14 +283,14 @@ PulseCRM/
 │   ├── queries.sql            32 report and demonstration queries
 │   ├── web_access.sql         Sign-in accounts, privileges and audit log for the web dashboard
 │   └── web_app_user.sql       MySQL account for the web dashboard (reads all, writes sign-in tables only)
-├── web/                       Live dashboard: Flask app for Vercel (see web/README.md)
+├── web/                       Live web application: Flask app for Vercel (see web/README.md)
 └── docs/
     ├── PROJECT_REPORT.md      Full university project report
     ├── ERD.md                 Mermaid ERD, notation and relationship list
     ├── erd.png / erd.svg      ERD image for presentations
     ├── DATA_DICTIONARY.md     Every table, column, key and constraint
     ├── QUERY_RESULTS.md       Each query with its real output
-    └── screenshots/           Result grids for every query
+    └── screenshots/           Result grids for every query; web/ holds the tour of the live site
 ```
 
 ---
@@ -298,60 +393,6 @@ To change a default, set the variable in your shell or in a `.env` file next to 
 | `PULSECRM_MYSQL_TAG` | `8.4` | MySQL image tag, for example `8.0` |
 
 Every push to this repository runs the [Docker build](.github/workflows/docker.yml) workflow. It builds the database with MySQL 8.0 and 8.4, checks all objects and the 305 sample rows, and runs `queries.sql`, expecting the seven integrity tests to fail with the errors listed in [Data Integrity Tests](#data-integrity-tests).
-
----
-
-## Live Dashboard
-
-**[pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app)** is a CRM website on the database, open to registered users. After signing in, users see the pages their privileges allow, in a sidebar that can be collapsed to icons: Overview, Pipeline, Accounts (Account 360), Sales Team, Leads, Marketing (campaigns, audience and lead sources), Support, Invoices, and a Database page with live row counts and the ER diagram.
-
-**Records (DML).** Each page lists its tables, and users with the right privileges can **add, edit and delete** rows in all 17 CRM tables:
-
-| Page | Tables |
-|---|---|
-| Pipeline | deals, deal line items, activities, products, pipeline stages |
-| Accounts | accounts, contacts, industries |
-| Sales Team | CRM staff, roles |
-| Leads | leads |
-| Marketing | campaigns, campaign members, lead sources |
-| Support | tickets |
-| Invoices | invoices, payments |
-
-- **Forms** are generated from MySQL's own metadata (`information_schema`): types, required columns, foreign-key dropdowns and the value lists of `CHECK ... IN` rules.
-- **MySQL enforces every rule.** A change that breaks one shows MySQL's own error, such as 3819 for a CHECK, 1062 for a duplicate or 1451 for a row that others still reference.
-- **Three operations** run through the stored procedures:
-  - **Convert lead** (`sp_convert_lead`);
-  - **Change deal stage** (`sp_update_opportunity_stage`; the trigger records which CRM user moved the deal);
-  - **Record payment** (`sp_record_payment`).
-- **The stage history stays read-only.**
-
-**User management.** Administrators get a **Users** tab, where they can:
-
-- create accounts, optionally linked to CRM staff, which pre-ticks that role's default privileges;
-- grant privileges in a grid: **View, Add, Edit and Delete** for every page, plus Manage users;
-- reset passwords and clear sign-in blocks;
-- deactivate or delete accounts;
-- read the log of sign-ins, account changes and record changes.
-
-| Part | Technology |
-|---|---|
-| Website | Python Flask app in [`web/`](web/README.md), hosted on Vercel |
-| Database | MySQL 8 on Aiven (free plan), built with the unchanged [`database/pulse_crm.sql`](database/pulse_crm.sql) |
-| Sign-in | Accounts, 31 privileges, an audit log and failed sign-ins in six extra tables ([`database/web_access.sql`](database/web_access.sql)). Passwords are stored as salted scrypt hashes and forms carry CSRF tokens. Wrong passwords are throttled per network address: 5 for one account, or 20 in total, block that address for 15 minutes, so nobody can lock other people out of a shared account. A Content-Security-Policy lets only the site's own scripts run |
-| Database access | MySQL account `pulse_web` ([`database/web_app_user.sql`](database/web_app_user.sql)), which may connect only over TLS (REQUIRE SSL) and is granted table by table: SELECT everywhere; INSERT, UPDATE and DELETE on the 17 CRM tables; EXECUTE on the three procedures; writes on the sign-in tables. It has no rights on the stage history and no CREATE, ALTER, DROP or GRANT |
-
-The [Docker build](.github/workflows/docker.yml) workflow tests the dashboard on every push, on MySQL 8.0 and 8.4:
-
-- signing in, and throttling of wrong passwords per network address (a forged address header does not help);
-- adding, editing and deleting records, including a two-column key;
-- MySQL's refusals (3819, 1062, 1451);
-- the three procedures, with their own refusals;
-- privileges on every route, including a user who may add but not edit or delete;
-- creating accounts, clearing sign-in blocks and deleting accounts;
-- the audit log and the Content-Security-Policy;
-- the grants of `pulse_web`, and that it is refused without TLS.
-
-Aiven may switch a free MySQL service off when nobody uses it. To prevent that, the [Keep the database awake](.github/workflows/keep-alive.yml) workflow queries the database through `/health` every hour. If the service is switched off anyway, the site shows a short "database is offline" page, the workflow fails and GitHub e-mails the owner, who switches it back on in the Aiven console. Setup steps are in [web/README.md](web/README.md).
 
 ---
 

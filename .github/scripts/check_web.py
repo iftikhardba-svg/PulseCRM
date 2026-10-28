@@ -101,6 +101,7 @@ def main():
     html = anon.get("/login").get_data(as_text=True)
     check('id="theme-toggle"' in html and ':root[data-theme="dark"]' in html,
           "every page has the sun/moon button and a dark palette")
+    check("#live-web-application" in html, "the sign-in page links visitors to the tour on GitHub")
     csp = anon.get("/login").headers.get("Content-Security-Policy", "")
     check("script-src 'nonce-" in csp and "default-src 'none'" in csp and "frame-ancestors 'none'" in csp
           and "unsafe-inline" not in csp.split("script-src")[1].split(";")[0], f"Content-Security-Policy: {csp}")
@@ -128,7 +129,8 @@ def main():
     html = admin.get("/").get_data(as_text=True)
     steps = re.findall(r'class="band f\d" style="clip-path: polygon\(', html)
     check(html.count('class="card kpi ') == 7 and len(steps) == 5 and "of previous" in html,
-          f"Overview shows 7 KPI cards and a 5-step sales funnel ({len(steps)} steps)")
+          f"Dashboard shows 7 KPI cards and a 5-step sales funnel ({len(steps)} steps)")
+    check(">Dashboard</span>" in html and "<h1>Dashboard</h1>" in html, "the first page is called Dashboard")
     for path in ["/users", f"/users/{admin_id}", "/data/accounts", "/"]:
         r = admin.get(path)
         html = r.get_data(as_text=True)
