@@ -1,29 +1,52 @@
 {% extends "base.html" %}
 {% from "_macros.html" import badge %}
 {% block title %}Overview{% endblock %}
+{# a KPI card; the caller supplies the icon's SVG shapes, and the meter shows what share of the whole the figure is #}
+{% macro kpi_card(tone, label, value, meter, note, unit='') -%}
+  <div class="card kpi {{ tone }}">
+    <div class="kpi-head">
+      <span class="kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true">{{ caller() }}</svg></span>
+      <span class="label">{{ label }}</span>
+    </div>
+    <div class="value">{% if unit %}<span class="unit">{{ unit }}</span>{% endif %}{{ value }}</div>
+    <div class="meter" aria-hidden="true"><span style="width: {{ meter }}%"></span></div>
+    <div class="note">{{ note }}</div>
+  </div>
+{%- endmacro %}
+
 {% block content %}
 <h1>Sales and service overview</h1>
 <p class="lead">Live figures from the <code>pulse_crm</code> MySQL database. Every number on this site is the result of a
   SQL query against its tables and reporting views.</p>
 
-<div class="grid kpis">
-  <div class="card kpi"><div class="label">Open pipeline</div><div class="value"><span class="unit">PKR</span>{{ kpi.open_pipeline|amount }}</div>
-    <div class="note">{{ kpi.open_deals }} open deals</div></div>
-  <div class="card kpi"><div class="label">Weighted pipeline</div><div class="value"><span class="unit">PKR</span>{{ kpi.weighted_pipeline|amount }}</div>
-    <div class="note">amount × stage win probability</div></div>
-  <div class="card kpi"><div class="label">Won revenue</div><div class="value"><span class="unit">PKR</span>{{ kpi.won_revenue|amount }}</div>
-    <div class="note">deals closed as won</div></div>
-  <div class="card kpi"><div class="label">Balance due</div><div class="value"><span class="unit">PKR</span>{{ kpi.balance_due|amount }}</div>
-    <div class="note">invoiced but not yet paid</div></div>
-  <div class="card kpi"><div class="label">Accounts</div><div class="value">{{ kpi.accounts }}</div>
-    <div class="note">{{ kpi.customers }} customers</div></div>
-  <div class="card kpi"><div class="label">Leads</div><div class="value">{{ kpi.leads }}</div>
-    <div class="note">from {{ sources|length }} sources</div></div>
-  <div class="card kpi"><div class="label">Open tickets</div><div class="value">{{ kpi.open_tickets }}</div>
-    <div class="note">open or in progress</div></div>
+{% set m = kpi.meter %}
+<div class="kpis money">
+  {% call kpi_card('t-blue', 'Open pipeline', kpi.open_pipeline|amount, m.open_pipeline,
+                   kpi.open_deals ~ ' of ' ~ kpi.total_deals ~ ' deals still open', 'PKR') %}
+    <polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/>{% endcall %}
+  {% call kpi_card('t-purple', 'Weighted pipeline', kpi.weighted_pipeline|amount, m.weighted_pipeline,
+                   m.weighted_pipeline ~ '% of the open pipeline', 'PKR') %}
+    <line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>{% endcall %}
+  {% call kpi_card('t-green', 'Won revenue', kpi.won_revenue|amount, m.won_revenue,
+                   kpi.won_deals ~ ' won of ' ~ kpi.closed_deals ~ ' closed deals · ' ~ m.won_revenue ~ '% win rate', 'PKR') %}
+    <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>{% endcall %}
+  {% call kpi_card('t-amber', 'Balance due', kpi.balance_due|amount, m.balance_due,
+                   m.balance_due ~ '% of PKR ' ~ kpi.invoiced|amount ~ ' invoiced', 'PKR') %}
+    <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>{% endcall %}
+</div>
+<div class="kpis counts">
+  {% call kpi_card('t-teal', 'Accounts', kpi.accounts, m.accounts,
+                   kpi.customers ~ ' are customers (' ~ m.accounts ~ '%)') %}
+    <rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>{% endcall %}
+  {% call kpi_card('t-purple', 'Leads', kpi.leads, m.leads,
+                   kpi.converted_leads ~ ' converted (' ~ m.leads ~ '%) · from ' ~ sources|length ~ ' sources') %}
+    <circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 11-3.3"/><path d="M19 14v6M16 17h6"/>{% endcall %}
+  {% call kpi_card('t-red', 'Open tickets', kpi.open_tickets, m.open_tickets,
+                   kpi.open_tickets ~ ' of ' ~ kpi.total_tickets ~ ' tickets open or in progress') %}
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>{% endcall %}
 </div>
 
-<div class="grid two">
+<div class="grid two pair">
   <div class="card">
     <h2>Pipeline by stage</h2>
     <div class="bars">
@@ -39,17 +62,21 @@
     <p class="muted" style="margin: 12px 0 0"><a href="/pipeline">Open deals and closed deals →</a></p>
   </div>
   <div class="card">
-    <h2>Leads by source</h2>
-    <div class="bars">
-      {% for r in sources %}
-        <div class="row">
-          <div>{{ r.source_name }}</div>
-          <div class="track"><div class="fill" style="width: {{ r.bar }}%"></div></div>
-          <div class="val">{{ r.total_leads }} leads · {{ r.conversion_rate_pct|pct }} converted</div>
+    <h2>Sales funnel</h2>
+    <div class="funnel">
+      {% for s in funnel %}
+        <div class="step">
+          <div class="band f{{ loop.index }}" style="clip-path: {{ s.clip }}">{{ s.label }}</div>
+          <div class="stat"><strong>{{ s.count }}</strong>
+            <span>{% if loop.first %}all leads{% else %}{{ s.of_previous }}% of previous{% endif %}</span></div>
         </div>
       {% endfor %}
     </div>
-    <p class="muted" style="margin: 12px 0 0"><a href="/leads">Lead conversion →</a></p>
+    <div class="funnel-foot">
+      <span>{{ won_share }}% of leads became won deals{% if best_source %}; best source
+        {{ best_source.source_name }} ({{ best_source.conversion_rate_pct|pct }} converted){% endif %}</span>
+      <a href="/leads">Lead conversion by source →</a>
+    </div>
   </div>
 </div>
 

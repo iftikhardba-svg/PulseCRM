@@ -119,6 +119,10 @@ def main():
         title = re.search(r"<h1>(.*?)</h1>", r.get_data(as_text=True))
         check(r.status_code == 200, f"{path}: {r.status_code} {title.group(1) if title else ''}")
     check(">Users</a>" in admin.get("/").get_data(as_text=True), "administrator sees the Users tab")
+    html = admin.get("/").get_data(as_text=True)
+    steps = re.findall(r'class="band f\d" style="clip-path: polygon\(', html)
+    check(html.count('class="card kpi ') == 7 and len(steps) == 5 and "of previous" in html,
+          f"Overview shows 7 KPI cards and a 5-step sales funnel ({len(steps)} steps)")
     for path in ["/users", f"/users/{admin_id}", "/data/accounts", "/"]:
         r = admin.get(path)
         html = r.get_data(as_text=True)

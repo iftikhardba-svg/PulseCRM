@@ -26,6 +26,9 @@
       --amber: #a15c07; --amber-bg: #fdf1dc; --grey-bg: #eef1f5;
       --info-bg: #eef4ff; --info-line: #cfdcf7; --info-ink: #23406f; --chip-bg: #e7eefb;
       --field-bg: #ffffff; --field-line: #c5ccd8; --focus: #9cc0f5;
+      --purple: #6941c6; --purple-bg: #f1ebff; --teal: #0e7490; --teal-bg: #e0f2f7;
+      --funnel-1: #2f5fb3; --funnel-2: #2c69a8; --funnel-3: #25748f; --funnel-4: #19787a; --funnel-5: #12805c;
+      --shadow: 0 1px 2px rgba(16, 24, 40, .05);
     }
     :root[data-theme="dark"] {
       color-scheme: dark;
@@ -37,6 +40,9 @@
       --amber: #f0b35a; --amber-bg: #3a2a10; --grey-bg: #222b3b;
       --info-bg: #17233b; --info-line: #2b4170; --info-ink: #bcd0f7; --chip-bg: #1d2a44;
       --field-bg: #0f1624; --field-line: #3a4559; --focus: #3d6fc4;
+      --purple: #b9a3ff; --purple-bg: #2a2147; --teal: #5cc8e0; --teal-bg: #0f2f38;
+      --funnel-1: #3767c4; --funnel-2: #2f6fae; --funnel-3: #2a7891; --funnel-4: #217a77; --funnel-5: #1b7f5a;
+      --shadow: none;
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--ink);
@@ -60,14 +66,48 @@
     h2 { font-size: 17px; margin: 0 0 12px; color: var(--heading); }
     .lead { color: var(--muted); margin: 0 0 20px; max-width: 820px; }
     .grid { display: grid; gap: 16px; }
-    .kpis { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 18px; }
     .two { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); margin-bottom: 18px; }
-    .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
-    .kpi .label { color: var(--muted); font-size: 13px; }
-    .kpi .value { font-size: 21px; font-weight: 700; color: var(--heading); margin-top: 2px; white-space: nowrap;
-                  font-variant-numeric: tabular-nums; }
-    .kpi .unit { font-size: 12px; font-weight: 600; color: var(--muted); margin-right: 3px; }
-    .kpi .note { color: var(--muted); font-size: 12px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px;
+            box-shadow: var(--shadow); }
+    /* KPI cards: four money figures, then three counts; each row fills the full width */
+    .kpis { display: grid; gap: 16px; margin-bottom: 16px; }
+    .kpis.money { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .kpis.counts { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 20px; }
+    .kpi { display: flex; flex-direction: column; padding: 16px 18px 15px; --tone: var(--accent); --tone-bg: var(--chip-bg); }
+    .kpi.t-green { --tone: var(--green); --tone-bg: var(--green-bg); }
+    .kpi.t-amber { --tone: var(--amber); --tone-bg: var(--amber-bg); }
+    .kpi.t-red { --tone: var(--red); --tone-bg: var(--red-bg); }
+    .kpi.t-purple { --tone: var(--purple); --tone-bg: var(--purple-bg); }
+    .kpi.t-teal { --tone: var(--teal); --tone-bg: var(--teal-bg); }
+    .kpi-head { display: flex; align-items: center; gap: 10px; }
+    .kpi-icon { flex: none; width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+                background: var(--tone-bg); color: var(--tone); }
+    .kpi-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2;
+                    stroke-linecap: round; stroke-linejoin: round; }
+    .kpi .label { color: var(--muted); font-size: 13.5px; font-weight: 600; }
+    .kpi .value { font-size: 25px; font-weight: 700; color: var(--heading); margin-top: 12px; line-height: 1.15;
+                  white-space: nowrap; font-variant-numeric: tabular-nums; letter-spacing: -.2px; }
+    .kpis.counts .kpi .value { font-size: 28px; }
+    .kpi .unit { font-size: 12px; font-weight: 600; color: var(--muted); margin-right: 4px; letter-spacing: .3px; }
+    .kpi .meter { height: 6px; border-radius: 999px; background: var(--grey-bg); overflow: hidden; margin: 12px 0 8px; }
+    .kpi .meter span { display: block; height: 100%; border-radius: inherit; background: var(--tone); }
+    .kpi .note { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+    /* sales funnel: one clipped band per step, joined into one shape */
+    .funnel { display: grid; gap: 4px; }
+    .funnel .step { display: grid; grid-template-columns: minmax(0, 1fr) 118px; align-items: center; gap: 16px; }
+    .funnel .band { height: 44px; display: flex; align-items: center; justify-content: center; color: #fff;
+                    font-size: 13.5px; font-weight: 600; letter-spacing: .2px; }
+    .funnel .f1 { background: var(--funnel-1); } .funnel .f2 { background: var(--funnel-2); }
+    .funnel .f3 { background: var(--funnel-3); } .funnel .f4 { background: var(--funnel-4); }
+    .funnel .f5 { background: var(--funnel-5); }
+    .funnel .stat { line-height: 1.25; }
+    .funnel .stat strong { display: block; font-size: 18px; color: var(--heading); font-variant-numeric: tabular-nums; }
+    .funnel .stat span { color: var(--muted); font-size: 12.5px; }
+    /* two cards side by side: the shorter one spreads its bar rows so both end level */
+    .pair > .card { display: flex; flex-direction: column; }
+    .pair .bars { flex: 1; align-content: space-evenly; }
+    .funnel-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; margin: 14px 0 0;
+                   color: var(--muted); font-size: 14px; }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
     th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase;
@@ -149,8 +189,15 @@
     table.matrix { width: auto; }
     table.matrix th, table.matrix td { text-align: center; padding: 6px 14px; }
     table.matrix td:first-child, table.matrix th:first-child { text-align: left; }
+    @media (max-width: 1000px) {
+      .kpis.money { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
     @media (max-width: 760px) {
       .table-wrap table.wide { min-width: 720px; }
+    }
+    @media (max-width: 640px) {
+      .kpis.money, .kpis.counts { grid-template-columns: minmax(0, 1fr); }
+      .funnel .step { grid-template-columns: minmax(0, 1fr) 96px; gap: 10px; }
     }
     @media (max-width: 560px) {
       .gh { margin-left: 0; }

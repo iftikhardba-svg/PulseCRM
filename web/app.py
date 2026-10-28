@@ -830,6 +830,31 @@ def share(part, whole):
     return 0 if not whole else max(2, round(float(part) * 100 / float(whole)))
 
 
+def percent(part, whole):
+    return round(float(part) * 100 / float(whole)) if whole else 0
+
+
+# the sales funnel on the Overview page: each step counts the leads that reached it
+FUNNEL = [("leads", "Leads"), ("contacted", "Contacted"), ("qualified", "Qualified"),
+          ("converted", "Converted"), ("won", "Won")]
+
+
+def funnel_steps(row):
+    """One band per step. A band's top edge is as wide as its own count and its bottom edge as wide as the next
+    step's, so the bands join into one funnel; widths run from 40% (no leads) to 100% (all leads)."""
+    counts = [int(row[key] or 0) for key, _ in FUNNEL]
+    widths = [40 + 60 * count / (counts[0] or 1) for count in counts]
+    steps = []
+    for i, (_, label) in enumerate(FUNNEL):
+        top = widths[i]
+        bottom = widths[i + 1] if i + 1 < len(widths) else top - 8
+        steps.append({"label": label, "count": counts[i],
+                      "of_previous": percent(counts[i], counts[i - 1]) if i else None,
+                      "clip": "polygon({:.1f}% 0, {:.1f}% 0, {:.1f}% 100%, {:.1f}% 100%)".format(
+                          (100 - top) / 2, (100 + top) / 2, (100 + bottom) / 2, (100 - bottom) / 2)})
+    return steps
+
+
 # --------------------------------------------------------------------------- CRM pages
 @app.route("/")
 @requires("view_overview")
@@ -847,7 +872,24 @@ def overview():
                    (SELECT COALESCE(SUM(amount), 0) FROM vw_sales_pipeline WHERE is_won = TRUE) AS won_revenue,
                    (SELECT COUNT(*) FROM tickets WHERE status IN ('Open', 'In Progress'))     AS open_tickets,
                    (SELECT COALESCE(SUM(balance_due), 0) FROM vw_invoice_balance
-                     WHERE status <> 'Cancelled')                                             AS balance_due""",
+                     WHERE status <> 'Cancelled')                                             AS balance_due,
+                   (SELECT COALESCE(SUM(total_amount), 0) FROM vw_invoice_balance
+                     WHERE status <> 'Cancelled')                                             AS invoiced,
+                   (SELECT COUNT(*) FROM opportunities)                                       AS total_deals,
+                   (SELECT COUNT(*) FROM vw_sales_pipeline WHERE is_closed = TRUE)            AS closed_deals,
+                   (SELECT COUNT(*) FROM vw_sales_pipeline WHERE is_won = TRUE)               AS won_deals,
+                   (SELECT COUNT(*) FROM leads WHERE status = 'Converted')                    AS converted_leads,
+                   (SELECT COUNT(*) FROM tickets)                                             AS total_tickets""",
+        funnel="""
+            SELECT COUNT(*)                                               AS leads,
+                   COALESCE(SUM(status <> 'New'), 0)                      AS contacted,
+                   COALESCE(SUM(status IN ('Qualified', 'Converted')), 0) AS qualified,
+                   COALESCE(SUM(status = 'Converted'), 0)                 AS converted,
+                   (SELECT COUNT(DISTINCT o.lead_id)
+                    FROM opportunities o
+                    JOIN pipeline_stages s ON s.stage_id = o.stage_id
+                    WHERE o.lead_id IS NOT NULL AND s.is_won = TRUE)     AS won
+            FROM leads""",
         stages="""
             SELECT s.stage_name, s.win_probability, s.is_closed, s.is_won,
                    COUNT(o.opportunity_id) AS deals, COALESCE(SUM(o.amount), 0) AS amount
@@ -868,11 +910,21 @@ def overview():
     top = max((r["amount"] for r in data["stages"]), default=0)
     for r in data["stages"]:
         r["bar"] = share(r["amount"], top)
-    top = max((r["total_leads"] for r in data["sources"]), default=0)
-    for r in data["sources"]:
-        r["bar"] = share(r["total_leads"], top)
     kpi = data.pop("kpi")[0]
-    return render_template("overview.html", page="overview", kpi=kpi, **data)
+    # the thin bar on each card: what share of the whole the card's figure is
+    kpi["meter"] = {
+        "open_pipeline": percent(kpi["open_deals"], kpi["total_deals"]),
+        "weighted_pipeline": percent(kpi["weighted_pipeline"], kpi["open_pipeline"]),
+        "won_revenue": percent(kpi["won_deals"], kpi["closed_deals"]),
+        "balance_due": percent(kpi["balance_due"], kpi["invoiced"]),
+        "accounts": percent(kpi["customers"], kpi["accounts"]),
+        "leads": percent(kpi["converted_leads"], kpi["leads"]),
+        "open_tickets": percent(kpi["open_tickets"], kpi["total_tickets"]),
+    }
+    funnel = funnel_steps(data.pop("funnel")[0])
+    best_source = max(data["sources"], key=lambda r: (r["conversion_rate_pct"] or 0, r["total_leads"]), default=None)
+    return render_template("overview.html", page="overview", kpi=kpi, funnel=funnel, best_source=best_source,
+                           won_share=percent(funnel[-1]["count"], funnel[0]["count"]), **data)
 
 
 @app.route("/pipeline")
