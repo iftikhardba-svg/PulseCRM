@@ -16,6 +16,8 @@ A CRM website for the `pulse_crm` database, written in Python with Flask and hos
 
 Every signed-in user also has **My account**, where they change their password. `/health` is public and returns the database name, MySQL version and account count as JSON.
 
+**Light and dark mode:** the moon/sun button at the top right of every page switches the theme. The choice is remembered in the browser; until someone chooses, the site follows the system setting. All colours are CSS variables in `templates/base.html`, with a second set for `[data-theme="dark"]`.
+
 ## Records
 
 - **Forms follow the database.** `web/crud.py` reads the columns, types, NOT NULL rules, defaults, primary keys, foreign keys and `CHECK (... IN (...))` lists from `information_schema`. Foreign keys become dropdowns with readable names, CHECK lists become choices, and AUTO_INCREMENT keys, generated columns (`line_total`) and timestamps set by MySQL are read-only.

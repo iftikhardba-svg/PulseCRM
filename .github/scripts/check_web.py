@@ -97,6 +97,9 @@ def main():
     r = anon.get("/")
     check(r.status_code == 302 and "/login" in r.headers["Location"], f"/ redirects to sign-in: {r.status_code}")
     check(anon.get("/health").status_code == 200, "/health stays public")
+    html = anon.get("/login").get_data(as_text=True)
+    check('id="theme-toggle"' in html and ':root[data-theme="dark"]' in html,
+          "every page has the sun/moon button and a dark palette")
     csp = anon.get("/login").headers.get("Content-Security-Policy", "")
     check("script-src 'nonce-" in csp and "default-src 'none'" in csp and "frame-ancestors 'none'" in csp
           and "unsafe-inline" not in csp.split("script-src")[1].split(";")[0], f"Content-Security-Policy: {csp}")

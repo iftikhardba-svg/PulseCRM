@@ -6,19 +6,44 @@
   <title>{% block title %}PulseCRM{% endblock %} · PulseCRM</title>
   <meta name="description" content="PulseCRM: a relational CRM database in MySQL 8.0, with a reporting dashboard for signed-in users.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3864'/%3E%3Cpath d='M5 17h6l3-7 4 13 3-6h6' stroke='%2363c5ff' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <script nonce="{{ csp_nonce() }}">
+    // Apply the saved theme, or the system's, before the page is drawn so it never flashes the wrong one.
+    (function () {
+      var saved = null;
+      try { saved = localStorage.getItem("pulsecrm-theme"); } catch (e) {}
+      var dark = saved ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    })();
+  </script>
   <style>
     :root {
-      --navy: #1f3864; --blue: #2e5597; --accent: #1f7ae0; --ink: #1d2433; --muted: #5d6779;
-      --line: #e3e7ee; --bg: #f5f7fa; --card: #ffffff; --bar: #4a7fd4; --bar-soft: #dbe7fa;
-      --green: #12805c; --green-bg: #e3f5ec; --red: #b42318; --red-bg: #fde9e7;
+      color-scheme: light;
+      --heading: #1f3864; --header-bg: #1f3864; --btn: #1f3864; --btn-hover: #2e5597; --danger: #b42318;
+      --blue: #2e5597; --accent: #1f7ae0; --ink: #1d2433; --muted: #5d6779;
+      --line: #e3e7ee; --bg: #f5f7fa; --card: #ffffff; --bar: #4a7fd4; --bar-soft: #dbe7fa; --bar-lost: #c9ced8;
+      --green: #12805c; --green-bg: #e3f5ec; --green-line: #b9e3cf;
+      --red: #b42318; --red-bg: #fde9e7; --red-line: #f5c2bd;
       --amber: #a15c07; --amber-bg: #fdf1dc; --grey-bg: #eef1f5;
+      --info-bg: #eef4ff; --info-line: #cfdcf7; --info-ink: #23406f; --chip-bg: #e7eefb;
+      --field-bg: #ffffff; --field-line: #c5ccd8; --focus: #9cc0f5;
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --heading: #d5e3ff; --header-bg: #142039; --btn: #3767c4; --btn-hover: #4a7ad6; --danger: #c8372b;
+      --blue: #8fb4ff; --accent: #6ea8ff; --ink: #e3e8f1; --muted: #9aa6b9;
+      --line: #2a3447; --bg: #0e1420; --card: #161e2c; --bar: #5b8def; --bar-soft: #233149; --bar-lost: #4a5466;
+      --green: #4cc38a; --green-bg: #12301f; --green-line: #1f5a3c;
+      --red: #ff8f84; --red-bg: #3a1714; --red-line: #6b2a24;
+      --amber: #f0b35a; --amber-bg: #3a2a10; --grey-bg: #222b3b;
+      --info-bg: #17233b; --info-line: #2b4170; --info-ink: #bcd0f7; --chip-bg: #1d2a44;
+      --field-bg: #0f1624; --field-line: #3a4559; --focus: #3d6fc4;
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--ink);
            font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
-    header { background: var(--navy); color: #fff; }
+    header { background: var(--header-bg); color: #fff; }
     .bar-top { max-width: 1200px; margin: 0 auto; padding: 18px 16px 0; display: flex; flex-wrap: wrap;
                align-items: baseline; gap: 6px 14px; }
     .brand { font-size: 22px; font-weight: 700; letter-spacing: .2px; color: #fff; }
@@ -29,17 +54,17 @@
     nav { max-width: 1200px; margin: 0 auto; padding: 10px 16px 0; display: flex; gap: 4px; overflow-x: auto; }
     nav a { color: #c7d3ea; padding: 9px 12px; border-radius: 8px 8px 0 0; white-space: nowrap; font-size: 14px; }
     nav a:hover { color: #fff; text-decoration: none; background: rgba(255,255,255,.08); }
-    nav a.on { background: var(--bg); color: var(--navy); font-weight: 600; }
+    nav a.on { background: var(--bg); color: var(--heading); font-weight: 600; }
     main { max-width: 1200px; margin: 0 auto; padding: 22px 16px 32px; }
-    h1 { font-size: 24px; margin: 0 0 4px; color: var(--navy); }
-    h2 { font-size: 17px; margin: 0 0 12px; color: var(--navy); }
+    h1 { font-size: 24px; margin: 0 0 4px; color: var(--heading); }
+    h2 { font-size: 17px; margin: 0 0 12px; color: var(--heading); }
     .lead { color: var(--muted); margin: 0 0 20px; max-width: 820px; }
     .grid { display: grid; gap: 16px; }
     .kpis { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 18px; }
     .two { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); margin-bottom: 18px; }
     .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
     .kpi .label { color: var(--muted); font-size: 13px; }
-    .kpi .value { font-size: 21px; font-weight: 700; color: var(--navy); margin-top: 2px; white-space: nowrap;
+    .kpi .value { font-size: 21px; font-weight: 700; color: var(--heading); margin-top: 2px; white-space: nowrap;
                   font-variant-numeric: tabular-nums; }
     .kpi .unit { font-size: 12px; font-weight: 600; color: var(--muted); margin-right: 3px; }
     .kpi .note { color: var(--muted); font-size: 12px; }
@@ -57,20 +82,30 @@
     .bars .track { background: var(--bar-soft); border-radius: 5px; height: 14px; overflow: hidden; }
     .bars .fill { background: var(--bar); height: 100%; border-radius: 5px; }
     .bars .fill.won { background: var(--green); }
-    .bars .fill.lost { background: #c9ced8; }
+    .bars .fill.lost { background: var(--bar-lost); }
     .bars .val { color: var(--muted); font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
     .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
              background: var(--grey-bg); color: var(--muted); white-space: nowrap; }
     .b-customer, .b-paid, .b-converted, .b-won, .b-resolved, .b-closed, .b-qualified { background: var(--green-bg); color: var(--green); }
     .b-overdue, .b-critical, .b-lost, .b-churned, .b-unqualified, .b-open { background: var(--red-bg); color: var(--red); }
     .b-partially-paid, .b-high, .b-in-progress, .b-prospect, .b-contacted, .b-unpaid { background: var(--amber-bg); color: var(--amber); }
-    .b-partner, .b-new, .b-medium { background: #e7eefb; color: var(--blue); }
+    .b-partner, .b-new, .b-medium { background: var(--chip-bg); color: var(--blue); }
     .b-active { background: var(--green-bg); color: var(--green); }
-    .note-box { background: #eef4ff; border: 1px solid #cfdcf7; border-radius: 10px; padding: 12px 16px;
-                color: #23406f; font-size: 14px; margin-bottom: 18px; }
+    .note-box { background: var(--info-bg); border: 1px solid var(--info-line); border-radius: 10px; padding: 12px 16px;
+                color: var(--info-ink); font-size: 14px; margin-bottom: 18px; }
     footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
     footer div { max-width: 1200px; margin: 0 auto; padding: 16px; }
     img.erd { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    [data-theme="dark"] img.erd { filter: brightness(.9); }   /* the diagram is drawn on white */
+    .theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 30px;
+                    padding: 0; border: 1px solid rgba(255,255,255,.35); border-radius: 6px; background: none;
+                    color: #fff; cursor: pointer; }
+    .theme-toggle:hover { background: rgba(255,255,255,.12); }
+    .theme-toggle:focus-visible { outline: 2px solid #9cc0f5; outline-offset: 2px; }
+    .theme-toggle svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2;
+                        stroke-linecap: round; stroke-linejoin: round; }
+    .theme-toggle .sun, [data-theme="dark"] .theme-toggle .moon { display: none; }
+    [data-theme="dark"] .theme-toggle .sun { display: block; }
     .who { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 14px; }
     .who .name { color: #fff; font-weight: 600; }
     .who a, .who button.linkish { color: #c7d3ea; }
@@ -78,33 +113,34 @@
     button.linkish { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
     button.linkish:hover { text-decoration: underline; color: #fff; }
     .flash { border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 14px; border: 1px solid; }
-    .flash.ok { background: var(--green-bg); color: var(--green); border-color: #b9e3cf; }
-    .flash.error { background: var(--red-bg); color: var(--red); border-color: #f5c2bd; }
-    .flash.info { background: #eef4ff; color: #23406f; border-color: #cfdcf7; }
+    .flash.ok { background: var(--green-bg); color: var(--green); border-color: var(--green-line); }
+    .flash.error { background: var(--red-bg); color: var(--red); border-color: var(--red-line); }
+    .flash.info { background: var(--info-bg); color: var(--info-ink); border-color: var(--info-line); }
     label { display: block; font-weight: 600; font-size: 14px; margin: 12px 0 4px; }
     label.check { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; margin: 6px 0; }
     label.check input { margin-top: 3px; }
     .hint { color: var(--muted); font-size: 13px; font-weight: 400; }
     input[type=text], input[type=password], select {
-      width: 100%; max-width: 420px; padding: 8px 10px; border: 1px solid #c5ccd8; border-radius: 8px;
-      font: inherit; background: #fff; color: var(--ink); }
-    input:focus, select:focus { outline: 2px solid #9cc0f5; border-color: var(--accent); }
-    .btn { display: inline-block; background: var(--navy); color: #fff; border: 0; border-radius: 8px;
+      width: 100%; max-width: 420px; padding: 8px 10px; border: 1px solid var(--field-line); border-radius: 8px;
+      font: inherit; background: var(--field-bg); color: var(--ink); }
+    input:focus, select:focus, textarea:focus { outline: 2px solid var(--focus); border-color: var(--accent); }
+    .btn { display: inline-block; background: var(--btn); color: #fff; border: 0; border-radius: 8px;
            padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer; }
-    .btn:hover { background: var(--blue); text-decoration: none; }
-    .btn.danger { background: var(--red); }
+    .btn:hover { background: var(--btn-hover); text-decoration: none; }
+    .btn.danger { background: var(--danger); }
     .btn.secondary { background: var(--grey-bg); color: var(--ink); }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
     .privs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 16px; }
     .login-card { max-width: 400px; margin: 30px auto; }
-    textarea { width: 100%; max-width: 620px; padding: 8px 10px; border: 1px solid #c5ccd8; border-radius: 8px; font: inherit; }
+    textarea { width: 100%; max-width: 620px; padding: 8px 10px; border: 1px solid var(--field-line); border-radius: 8px;
+               font: inherit; background: var(--field-bg); color: var(--ink); }
     .req { color: var(--red); }
     .ro { padding: 6px 0; color: var(--muted); }
     .manage { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 18px; }
-    .manage-label { font-weight: 600; font-size: 14px; color: var(--navy); }
-    .chip { display: inline-block; padding: 4px 12px; border-radius: 999px; background: #e7eefb; color: var(--blue);
+    .manage-label { font-weight: 600; font-size: 14px; color: var(--heading); }
+    .chip { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--chip-bg); color: var(--blue);
             font-size: 13px; font-weight: 600; }
-    .chip:hover, .chip.on { background: var(--navy); color: #fff; text-decoration: none; }
+    .chip:hover, .chip.on { background: var(--btn); color: #fff; text-decoration: none; }
     table.data td { white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
     .row-actions { white-space: nowrap; }
     .row-actions a, .row-actions form { margin-right: 10px; }
@@ -138,6 +174,12 @@
         </form>
       {% endif %}
       <a class="gh" href="{{ github }}">Source on GitHub</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode"
+              title="Switch to dark mode">
+        <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/>
+          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
     </div>
   </div>
   <nav>
@@ -165,6 +207,31 @@
     var message = event.target.getAttribute("data-confirm");
     if (message && !window.confirm(message)) event.preventDefault();
   });
+
+  // The sun/moon button switches between light and dark mode and remembers the choice in this browser.
+  // Until someone chooses, the site follows the system setting, also when it changes.
+  (function () {
+    var root = document.documentElement, toggle = document.getElementById("theme-toggle");
+    var system = window.matchMedia("(prefers-color-scheme: dark)");
+    function saved() {
+      try { return localStorage.getItem("pulsecrm-theme"); } catch (e) { return null; }
+    }
+    function show(theme) {
+      root.setAttribute("data-theme", theme);
+      var label = "Switch to " + (theme === "dark" ? "light" : "dark") + " mode";
+      toggle.setAttribute("aria-label", label);
+      toggle.title = label;
+    }
+    show(root.getAttribute("data-theme") === "dark" ? "dark" : "light");
+    toggle.addEventListener("click", function () {
+      var theme = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      show(theme);
+      try { localStorage.setItem("pulsecrm-theme", theme); } catch (e) {}
+    });
+    system.addEventListener("change", function (event) {
+      if (!saved()) show(event.matches ? "dark" : "light");
+    });
+  })();
 </script>
 </body>
 </html>
