@@ -70,10 +70,11 @@ jobs:
           ADMIN_DATABASE_URL: mysql://root:pulsecrm@127.0.0.1:3307/pulse_crm
         run: |
           .venv/bin/python web/setup_cloud_db.py
-          # the per-account lockout columns of earlier versions must be removed by --keep-data
-          docker compose exec -T db sh -c 'mysql -uroot -p$MYSQL_ROOT_PASSWORD pulse_crm -e "ALTER TABLE web_accounts ADD COLUMN failed_logins TINYINT UNSIGNED NOT NULL DEFAULT 0, ADD COLUMN locked_until DATETIME NULL"'
+          # an earlier sign-in schema: --keep-data must remove the per-account lockout columns and add password_locked
+          docker compose exec -T db sh -c 'mysql -uroot -p$MYSQL_ROOT_PASSWORD pulse_crm -e "ALTER TABLE web_accounts ADD COLUMN failed_logins TINYINT UNSIGNED NOT NULL DEFAULT 0, ADD COLUMN locked_until DATETIME NULL, DROP COLUMN password_locked"'
           .venv/bin/python web/setup_cloud_db.py --keep-data | tee keep-data.out
           grep -q 'per-account lockout columns removed' keep-data.out
+          grep -q 'password_locked added' keep-data.out
           grep -q 'is refused without TLS' keep-data.out
           test -s web/.env.admin
           grep -q '^SECRET_KEY=' web/.env.vercel

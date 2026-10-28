@@ -4,6 +4,13 @@
 <div class="card login-card">
   <h1>Sign in</h1>
   <p class="muted" style="margin: 0 0 8px">PulseCRM is open to registered users. Ask an administrator for an account.</p>
+  {% if demo %}
+    <div class="note-box demo-box">
+      <strong>Try the demo</strong> (view only): user name <code>{{ demo[0] }}</code>, password <code>{{ demo[1] }}</code>
+      <button type="button" class="linkish" id="use-demo" data-username="{{ demo[0] }}" data-password="{{ demo[1] }}">Fill
+        it in</button>
+    </div>
+  {% endif %}
   {% if error %}<div class="flash error" style="margin: 12px 0 0">{{ error }}</div>{% endif %}
   <form method="post">
     <input type="hidden" name="csrf" value="{{ csrf_token() }}">
@@ -17,4 +24,14 @@
   <p class="hint" style="margin: 16px 0 0">No account? See every page and feature in the
     <a href="{{ github }}#live-web-application">tour on GitHub</a>.</p>
 </div>
+{% if demo %}
+<script nonce="{{ csp_nonce() }}">
+  // "Fill it in" copies the public demo login into the form.
+  document.getElementById("use-demo").addEventListener("click", function () {
+    document.getElementById("username").value = this.dataset.username;
+    document.getElementById("password").value = this.dataset.password;
+    document.getElementById("password").focus();
+  });
+</script>
+{% endif %}
 {% endblock %}

@@ -13,7 +13,7 @@ import sys
 from urllib.parse import unquote, urlparse
 
 import pymysql
-from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "web"))
@@ -102,6 +102,7 @@ def main():
     check('id="theme-toggle"' in html and ':root[data-theme="dark"]' in html,
           "every page has the sun/moon button and a dark palette")
     check("#live-web-application" in html, "the sign-in page links visitors to the tour on GitHub")
+    check("Try the demo" in html and 'id="use-demo"' in html, "the sign-in page shows the public demo login")
     csp = anon.get("/login").headers.get("Content-Security-Policy", "")
     check("script-src 'nonce-" in csp and "default-src 'none'" in csp and "frame-ancestors 'none'" in csp
           and "unsafe-inline" not in csp.split("script-src")[1].split(";")[0], f"Content-Security-Policy: {csp}")
@@ -272,6 +273,30 @@ def main():
     r = sprayer.post("/login", data={"csrf": token(sprayer), "username": "ci.rep", "password": new_password},
                      headers={"X-Forwarded-For": "10.9.9.9", "X-Real-IP": "10.9.9.9"})
     check(r.status_code == 429, "a forged X-Forwarded-For or X-Real-IP header does not get round the block")
+
+    print("== Shared demo account")
+    demo_password = "Tour-" + secrets.token_urlsafe(10)
+    view_only = ["view_overview", "view_leads"]
+    post(admin, "/users", {"username": "ci.demo", "display_name": "CI Demo", "password": demo_password,
+                           "privileges": view_only})
+    cur.execute("SELECT account_id FROM web_accounts WHERE username = 'ci.demo'")
+    demo_id = cur.fetchone()[0]
+    r = post(admin, f"/users/{demo_id}", {"display_name": "CI Demo", "is_active": "on", "password_locked": "on",
+                                          "new_password": demo_password, "privileges": view_only})
+    cur.execute("SELECT password_locked, must_change_password FROM web_accounts WHERE account_id = %s", (demo_id,))
+    check(r.status_code == 302 and cur.fetchone() == (1, 0),
+          "ci.demo becomes a shared demo account, and a password reset does not ask for a new one")
+    visitor = web.app.test_client()
+    check(sign_in(visitor, "ci.demo", demo_password).status_code == 302 and visitor.get("/").status_code == 200,
+          "ci.demo signs in straight to the Dashboard")
+    html = visitor.get("/account").get_data(as_text=True)
+    check("shared demo account" in html and 'name="new"' not in html, "My account has no password form for it")
+    post(visitor, "/account", {"current": demo_password, "new": "Changed-pass-123", "confirm": "Changed-pass-123"})
+    cur.execute("SELECT password_hash FROM web_accounts WHERE account_id = %s", (demo_id,))
+    check(check_password_hash(cur.fetchone()[0], demo_password), "its users cannot change its password")
+    html = post(admin, f"/users/{demo_id}", {"display_name": "CI Demo", "is_active": "on", "password_locked": "on",
+                                             "privileges": view_only + ["manage_users"]}, follow=True).get_data(as_text=True)
+    check("cannot have the Manage users privilege" in html, "a shared demo account cannot get Manage users")
 
     print("== Delete and sign out")
     r = post(admin, f"/users/{rep_id}/delete", {})

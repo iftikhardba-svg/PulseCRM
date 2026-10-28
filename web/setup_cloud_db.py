@@ -151,6 +151,15 @@ def main():
         if old_columns:
             cur.execute("ALTER TABLE web_accounts " + ", ".join(f"DROP COLUMN {c}" for c in old_columns))
             print(f"   web_accounts: per-account lockout columns removed ({', '.join(old_columns)})")
+        # shared demo accounts, whose password the people using them cannot change
+        cur.execute("""SELECT COUNT(*) FROM information_schema.columns
+                       WHERE table_schema = 'pulse_crm' AND table_name = 'web_accounts'
+                         AND column_name = 'password_locked'""")
+        if not cur.fetchone()[0]:
+            cur.execute("""ALTER TABLE web_accounts ADD COLUMN password_locked BOOLEAN NOT NULL DEFAULT FALSE
+                           COMMENT 'TRUE for a shared demo account: its users cannot change the password'
+                           AFTER must_change_password""")
+            print("   web_accounts: password_locked added (shared demo accounts)")
     print("2. sign-in tables added or updated from database/web_access.sql")
 
     # 3. the web application's MySQL account

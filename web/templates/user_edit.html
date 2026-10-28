@@ -23,6 +23,9 @@
     {% include "_privilege_matrix.html" %}
     <label class="check"><input type="checkbox" name="is_active" {{ 'checked' if target.is_active }}>
       <span>Active <span class="hint">(clear to block sign-in without deleting the account)</span></span></label>
+    <label class="check"><input type="checkbox" name="password_locked" {{ 'checked' if target.password_locked }}>
+      <span>Shared demo account <span class="hint">(everyone signs in with the same password, so nobody can change
+        it on My account and a reset does not ask for a new one; not allowed with Manage users)</span></span></label>
     {% if blocked %}
       <label class="check"><input type="checkbox" name="unlock"><span>Clear the sign-in block now</span></label>
     {% endif %}

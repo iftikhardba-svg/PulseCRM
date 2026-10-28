@@ -71,6 +71,10 @@ THROTTLE_MINUTES = 15
 MAX_FAILURES_PER_ACCOUNT = 5     # wrong passwords for one account from one network address
 MAX_FAILURES_PER_ADDRESS = 20    # wrong passwords from one network address, for any accounts
 DUMMY_HASH = generate_password_hash("not-a-real-password")   # same work for unknown user names
+# The public demo login, shown on the sign-in page and in the README. It is public on purpose: the account is
+# view-only and marked as a shared demo account (password_locked), so the people using it cannot change its
+# password. An administrator sets this password on the Users page.
+DEMO_LOGIN = ("demo", "PulseCRM-Tour-2026")
 
 
 # --------------------------------------------------------------------------- database
@@ -99,7 +103,7 @@ IS_OPEN_TICKET = "CASE WHEN status IN ('Open', 'In Progress') THEN 1 ELSE 0 END"
 # --------------------------------------------------------------------------- sign-in
 ACCOUNT_SQL = """
     SELECT a.account_id, a.username, a.display_name, a.user_id, a.is_active, a.must_change_password,
-           a.last_login_at, a.created_at, u.full_name AS crm_name, r.role_name,
+           a.password_locked, a.last_login_at, a.created_at, u.full_name AS crm_name, r.role_name,
            GROUP_CONCAT(ap.privilege_code) AS privileges
     FROM web_accounts a
     LEFT JOIN users u                  ON a.user_id = u.user_id
@@ -107,7 +111,7 @@ ACCOUNT_SQL = """
     LEFT JOIN web_account_privileges ap ON ap.account_id = a.account_id
     WHERE a.account_id = %s
     GROUP BY a.account_id, a.username, a.display_name, a.user_id, a.is_active, a.must_change_password,
-             a.last_login_at, a.created_at, u.full_name, r.role_name"""
+             a.password_locked, a.last_login_at, a.created_at, u.full_name, r.role_name"""
 
 
 def load_account(account_id):
@@ -300,7 +304,7 @@ def login():
             # the password is not checked at all, so a blocked address learns nothing by guessing
             error = (f"Too many wrong passwords from your network. Wait up to {THROTTLE_MINUTES} minutes, "
                      "or ask an administrator to clear the block.")
-            return render_template("login.html", page="login", error=error, username=username), 429
+            return render_template("login.html", page="login", error=error, username=username, demo=DEMO_LOGIN), 429
         password_ok = check_password_hash(account["password_hash"] if account else DUMMY_HASH, password)
         if account and password_ok and account["is_active"]:
             with transaction() as cur:
@@ -318,7 +322,7 @@ def login():
             cur.execute("INSERT INTO web_login_failures (ip_address, account_id) VALUES (%s, %s)", (ip, account_id))
             audit(cur, account_id, "login_failed", f"from {ip}" if account else f"unknown user name, from {ip}")
         error = "Wrong user name or password."
-    return render_template("login.html", page="login", error=error, username=username)
+    return render_template("login.html", page="login", error=error, username=username, demo=DEMO_LOGIN)
 
 
 @app.route("/logout", methods=["POST"])
@@ -332,6 +336,11 @@ def logout():
 
 @app.route("/account", methods=["GET", "POST"])
 def account():
+    if g.user["password_locked"]:
+        # a shared demo account: everyone uses the same password, so nobody may change it for the others
+        if request.method == "POST":
+            flash("This is a shared demo account, so its password cannot be changed.", "error")
+        return render_template("account.html", page="account")
     if request.method == "POST":
         current = request.form.get("current", "")
         new = request.form.get("new", "")
@@ -425,14 +434,14 @@ def users():
                            else "That CRM staff member already has an account.")
         flash(problem, "error")
     accounts = rows("""
-        SELECT a.account_id, a.username, a.display_name, a.is_active, a.must_change_password, a.last_login_at,
-               u.full_name AS crm_name, r.role_name, GROUP_CONCAT(ap.privilege_code) AS codes
+        SELECT a.account_id, a.username, a.display_name, a.is_active, a.must_change_password, a.password_locked,
+               a.last_login_at, u.full_name AS crm_name, r.role_name, GROUP_CONCAT(ap.privilege_code) AS codes
         FROM web_accounts a
         LEFT JOIN users u                   ON a.user_id = u.user_id
         LEFT JOIN roles r                   ON u.role_id = r.role_id
         LEFT JOIN web_account_privileges ap ON ap.account_id = a.account_id
-        GROUP BY a.account_id, a.username, a.display_name, a.is_active, a.must_change_password, a.last_login_at,
-                 u.full_name, r.role_name
+        GROUP BY a.account_id, a.username, a.display_name, a.is_active, a.must_change_password, a.password_locked,
+                 a.last_login_at, u.full_name, r.role_name
         ORDER BY a.username""")
     blocked = blocked_addresses()
     for a in accounts:
@@ -463,6 +472,7 @@ def user_edit(account_id):
         active = request.form.get("is_active") == "on"
         chosen = set(request.form.getlist("privileges")) & valid
         new_password = request.form.get("new_password", "")
+        locked = request.form.get("password_locked") == "on"
         was_admin = target["is_active"] and "manage_users" in target["privileges"]
         stays_admin = active and "manage_users" in chosen
         problem = None
@@ -474,13 +484,19 @@ def user_edit(account_id):
             problem = "You cannot remove Manage users from your own account."
         elif was_admin and not stays_admin and other_admins(account_id) == 0:
             problem = "At least one active account must keep the Manage users privilege."
+        elif locked and "manage_users" in chosen:
+            problem = "A shared demo account cannot have the Manage users privilege."
         elif new_password:
             problem = password_problem(new_password, new_password, target["username"])
         if not problem:
             try:
                 with transaction() as cur:
-                    cur.execute("""UPDATE web_accounts SET display_name = %s, user_id = %s, is_active = %s
-                                   WHERE account_id = %s""", (display, form_user_id(), active, account_id))
+                    # a shared demo account is never asked for a new password: nobody could give one
+                    cur.execute("""UPDATE web_accounts
+                                   SET display_name = %s, user_id = %s, is_active = %s, password_locked = %s,
+                                       must_change_password = must_change_password AND NOT %s
+                                   WHERE account_id = %s""",
+                                (display, form_user_id(), active, locked, locked, account_id))
                     for code in sorted(target["privileges"] - chosen):
                         cur.execute("""DELETE FROM web_account_privileges
                                        WHERE account_id = %s AND privilege_code = %s""", (account_id, code))
@@ -491,14 +507,17 @@ def user_edit(account_id):
                     changes += [f"-{c}" for c in sorted(target["privileges"] - chosen)]
                     if active != bool(target["is_active"]):
                         changes.append("activated" if active else "deactivated")
+                    if locked != bool(target["password_locked"]):
+                        changes.append("shared demo account" if locked else "no longer a shared demo account")
                     if request.form.get("unlock") == "on" or new_password:
                         cur.execute("DELETE FROM web_login_failures WHERE account_id = %s", (account_id,))
                         if cur.rowcount and request.form.get("unlock") == "on":
                             changes.append("sign-in block cleared")
                     audit(cur, me, "account_updated", f"{target['username']}: {', '.join(changes) or 'details'}")
                     if new_password:
-                        cur.execute("""UPDATE web_accounts SET password_hash = %s, must_change_password = TRUE
-                                       WHERE account_id = %s""", (generate_password_hash(new_password), account_id))
+                        cur.execute("""UPDATE web_accounts SET password_hash = %s, must_change_password = %s
+                                       WHERE account_id = %s""",
+                                    (generate_password_hash(new_password), not locked, account_id))
                         audit(cur, me, "password_reset", target["username"])
                 flash(f"Account {target['username']} saved.", "ok")
                 return redirect(url_for("users"))

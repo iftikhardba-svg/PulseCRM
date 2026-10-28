@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS web_accounts (
     password_hash        VARCHAR(255)     NOT NULL                COMMENT 'Salted scrypt hash; the password itself is never stored',
     is_active            BOOLEAN          NOT NULL DEFAULT TRUE   COMMENT 'FALSE blocks sign-in',
     must_change_password BOOLEAN          NOT NULL DEFAULT TRUE   COMMENT 'TRUE until the user replaces a temporary password',
+    password_locked      BOOLEAN          NOT NULL DEFAULT FALSE  COMMENT 'TRUE for a shared demo account: its users cannot change the password',
     last_login_at        DATETIME         NULL                    COMMENT 'Last successful sign-in',
     created_at           DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation time',
     PRIMARY KEY (account_id),

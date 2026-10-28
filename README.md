@@ -11,7 +11,7 @@ PulseCRM stores everything a B2B sales and service team needs: leads, accounts, 
 
 > Final project for **Relational Database Management Systems (RDBMS)**, Postgraduate Diploma in Generative AI, NED University of Engineering & Technology, Karachi.
 
-**Live web application:** [pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app). No account? [Take the tour](#live-web-application) to see every page.
+**Live web application:** [pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app). Sign in with the view-only demo login, user name `demo` and password `PulseCRM-Tour-2026`, or [take the tour](#live-web-application) to see every page.
 
 ![PulseCRM dashboard: KPI cards, pipeline by stage and sales funnel](<docs/screenshots/web/dashboard.png>)
 
@@ -83,7 +83,14 @@ PulseCRM replaces those scattered sources with **one normalized relational datab
 
 ## Live Web Application
 
-**[pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app)** runs PulseCRM in the browser on the sample data. Signing in needs an account from an administrator, so this tour shows every part of the site for visitors who cannot sign in. All companies, people and figures are fictional.
+**[pulsecrm-peach.vercel.app](https://pulsecrm-peach.vercel.app)** runs PulseCRM in the browser on the sample data. All companies, people and figures are fictional.
+
+| Demo login (view only) | |
+|---|---|
+| User name | `demo` |
+| Password | `PulseCRM-Tour-2026` |
+
+The demo account can open every page except Users, but cannot add, edit or delete anything, and nobody can change its password. Other accounts are created by an administrator. This tour shows every part of the site.
 
 ### Sign-in page
 

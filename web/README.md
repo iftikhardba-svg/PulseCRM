@@ -64,6 +64,7 @@ On the Users page, privileges are a grid: one row per page, with View, Add, Edit
 - **Content-Security-Policy:** scripts run only from `<script>` tags that carry the response's random nonce. There are no inline event handlers, and nothing is loaded from other sites except the ER diagram image from GitHub.
 - **Sessions:** the session cookie is signed with `SECRET_KEY`, is HTTP-only and HTTPS-only, and expires after 8 hours.
 - **Administrators:** they cannot deactivate themselves or remove their own **Manage users** privilege, and the last administrator cannot be removed.
+- **Shared demo account:** an administrator can mark an account as a shared demo account (`password_locked`). Everyone signs in with the same password, so My account does not offer a password change, and a password reset does not ask for a new one; such an account cannot have **Manage users**. The live site's public demo login is `demo` / `PulseCRM-Tour-2026` (view only), shown on the sign-in page; it is set in `DEMO_LOGIN` in `app.py`, and the account's password on the Users page must match it.
 
 ## Database access
 

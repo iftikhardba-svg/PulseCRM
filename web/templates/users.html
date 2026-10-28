@@ -21,6 +21,7 @@
             {% if not a.is_active %}{{ badge('Inactive') }}{% else %}{{ badge('Active') }}{% endif %}
             {% if a.blocked %}<span class="hint">blocked from {{ a.blocked }} address{{ 'es' if a.blocked > 1 }}</span>{% endif %}
             {% if a.must_change_password %}<span class="hint">temporary password</span>{% endif %}
+            {% if a.password_locked %}<span class="hint">shared demo account</span>{% endif %}
           </td>
           <td>{{ a.privilege_summary }}</td>
           <td class="n">{{ a.last_login_at|when }}</td>
