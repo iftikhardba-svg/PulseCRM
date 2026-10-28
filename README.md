@@ -350,7 +350,7 @@ The [Docker build](.github/workflows/docker.yml) workflow tests the dashboard on
 - the audit log and the Content-Security-Policy;
 - the grants of `pulse_web`, and that it is refused without TLS.
 
-Aiven may switch a free MySQL service off when nobody uses it. When that happens, the site shows a short "database is offline" page until the service is switched back on in the Aiven console. Setup steps are in [web/README.md](web/README.md).
+Aiven may switch a free MySQL service off when nobody uses it. To prevent that, the [Keep the database awake](.github/workflows/keep-alive.yml) workflow queries the database through `/health` every hour. If the service is switched off anyway, the site shows a short "database is offline" page, the workflow fails and GitHub e-mails the owner, who switches it back on in the Aiven console. Setup steps are in [web/README.md](web/README.md).
 
 ---
 

@@ -118,4 +118,4 @@ flask --app web/app.py run
    - Vercel detects Flask on its own, and every push to `main` redeploys the site.
 3. **First sign-in:** sign in as `admin` with the temporary password, choose a new password, and create accounts on the **Users** page.
 
-Aiven powers off a free MySQL service that goes unused. When that happens, the site shows a "database is offline" page with links to the repository, until you switch the service back on in the Aiven console.
+Aiven powers off a free MySQL service that goes unused. The [keep-alive workflow](../.github/workflows/keep-alive.yml) opens `/health`, which runs a query, every hour so the service always shows activity. If it is powered off anyway, the site shows a "database is offline" page with links to the repository, the workflow run fails and GitHub e-mails you; switch the service back on in the Aiven console (Services → mysql-pulsecrm → Actions → Power on). A paid plan, such as Aiven's Developer tier, runs around the clock.
