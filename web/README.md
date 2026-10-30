@@ -124,4 +124,9 @@ flask --app web/app.py run
    - Vercel detects Flask on its own, and every push to `main` redeploys the site.
 3. **First sign-in:** sign in as `admin` with the temporary password, choose a new password, and create accounts on the **Users** page.
 
-Aiven powers off a free MySQL service that goes unused. The [keep-alive workflow](../.github/workflows/keep-alive.yml) opens `/health`, which runs a query, every hour so the service always shows activity. If it is powered off anyway, the site shows a "database is offline" page with links to the repository, the workflow run fails and GitHub e-mails you; switch the service back on in the Aiven console (Services → mysql-pulsecrm → Actions → Power on). A paid plan, such as Aiven's Developer tier, runs around the clock.
+Aiven switches a free MySQL service off from time to time, even one that is in use; an hourly query did not prevent it. The [keep-alive workflow](../.github/workflows/keep-alive.yml) therefore opens `/health`, which runs a query, every 10 minutes. When the database is off, it powers the service back on through the Aiven API, waits until the service is running and checks the site again. While the service starts, the site shows a "database is offline" page with links to the repository.
+
+- **Token:** the workflow needs an Aiven personal token (Aiven console → User information → Tokens → Generate token, with the longest session duration offered), saved as the repository secret `AIVEN_API_TOKEN` (GitHub → Settings → Secrets and variables → Actions → New repository secret).
+- **When it cannot help:** if a run cannot bring the site back, for example because the token has expired, it fails and GitHub e-mails you. You can always switch the service on yourself in the Aiven console (Services → mysql-pulsecrm → Actions → Power on).
+- **GitHub's timing:** GitHub starts scheduled runs late or skips some when it is busy, so the site can stay offline for a while before a run notices.
+- **Always on:** a paid plan, such as Aiven's Developer tier, runs around the clock.

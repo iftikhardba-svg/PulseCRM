@@ -1,24 +1,90 @@
-# Opens the live site's /health page every hour. /health runs a query on the Aiven
-# MySQL database, so the free service always shows recent activity and Aiven does not
-# power it off for being idle. If the database is offline anyway, the run fails and
-# GitHub e-mails the repository owner, who can power it on in the Aiven console.
-# (GitHub pauses scheduled workflows in a public repository after 60 days without
-# commits; re-enable it on the Actions tab if that happens.)
+# Checks the live site's /health page every 10 minutes. /health runs a query on the Aiven
+# MySQL database. Aiven switches a free service off from time to time, even one that is in
+# use, so when /health fails and the service is off, this workflow powers it back on through
+# the Aiven API and waits until the site answers again. A run that cannot bring the site
+# back fails, and GitHub e-mails the repository owner.
+#
+# Needs the repository secret AIVEN_API_TOKEN: an Aiven personal token (Aiven console →
+# User information → Tokens → Generate token).
+# (GitHub may start scheduled runs late or skip some when it is busy, and it pauses scheduled
+# workflows in a public repository after 60 days without commits; re-enable it on the
+# Actions tab if that happens.)
 
 name: Keep the database awake
 
 on:
   schedule:
-    - cron: "17 * * * *"   # every hour at minute 17, UTC
+    - cron: "*/10 * * * *"   # every 10 minutes, UTC
   workflow_dispatch:
 
 permissions: {}
 
+# one run at a time, so a run that is powering the service on is not disturbed
+concurrency:
+  group: keep-alive
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 35
+    env:
+      SITE: https://pulsecrm-peach.vercel.app
+      SERVICE_API: https://api.aiven.io/v1/project/pulsecrm/service/mysql-pulsecrm
     steps:
       - name: Query the database through /health
+        id: health
         # --retry also covers a 503 "database offline" answer from a cold start
-        run: curl -fsS --retry 3 --retry-delay 20 --max-time 30 https://pulsecrm-peach.vercel.app/health
+        run: |
+          if curl -fsS --retry 2 --retry-delay 20 --max-time 30 "$SITE/health"; then
+            echo "up=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "up=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Power the Aiven service back on
+        if: steps.health.outputs.up != 'true'
+        env:
+          AIVEN_API_TOKEN: ${{ secrets.AIVEN_API_TOKEN }}
+        run: |
+          if [ -z "$AIVEN_API_TOKEN" ]; then
+            echo "::error::The site cannot reach its database, and the AIVEN_API_TOKEN secret is not set, so the service cannot be powered on."
+            exit 1
+          fi
+          api() {
+            curl -sS --fail-with-body --max-time 30 -H "Authorization: aivenv1 $AIVEN_API_TOKEN" \
+                 -H "Content-Type: application/json" "$@" "$SERVICE_API"
+          }
+          if ! answer=$(api); then
+            echo "::error::Aiven refused the request: $answer"
+            exit 1
+          fi
+          state=$(jq -r .service.state <<< "$answer")
+          echo "The service is $state."
+          if [ "$state" = POWEROFF ]; then
+            if ! answer=$(api -X PUT -d '{"powered": true}'); then
+              echo "::error::Aiven did not power the service on: $answer"
+              exit 1
+            fi
+            echo "Asked Aiven to power the service on."
+            echo "The database was off at $(date -u '+%Y-%m-%d %H:%M') UTC, so this run powered it on." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          # starting takes a few minutes; wait up to 20
+          for i in $(seq 40); do
+            [ "$state" = RUNNING ] && break
+            sleep 30
+            state=$(api | jq -r .service.state) || state=unknown
+          done
+          echo "The service is $state."
+          if [ "$state" != RUNNING ]; then
+            echo "::error::The service is still $state after 20 minutes."
+            exit 1
+          fi
+
+      - name: Check that the site works again
+        if: steps.health.outputs.up != 'true'
+        # the database's host name can take a few minutes to resolve again after a power-on
+        run: curl -fsS --retry 10 --retry-delay 30 --retry-all-errors --max-time 30 "$SITE/health"
